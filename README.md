@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CAKS: City Attraction Kitchen Stay
 
-## Getting Started
+CAKS (City Attraction Kitchen Stay) is a comprehensive travel planning platform that integrates attractions, local cuisine, accommodations, and guided tours into a single, user-friendly interface. This project aims to solve the problem of fragmented travel information by providing a centralized hub for all travel-related needs.
 
-First, run the development server:
+## 🌟 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Unified Travel Information**: Access attractions, restaurants, accommodations, and tours in one place
+- **City-Based Search**: Intuitive search with autocomplete for global destinations
+- **AI-Powered Recommendations**: Personalized travel advice using Google Gemini AI
+- **Responsive Design**: Seamless experience across all devices
+- **Dark/Light Mode**: Toggle between visual themes for comfortable viewing
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Technologies
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Frontend**: Next.js, React, TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **State Management**: React Hooks
+- **Database**: Supabase (planned)
+- **AI Integration**: Google Gemini API (planned)
+- **Deployment**: Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📋 Prerequisites
 
-## Learn More
+- Node.js 18.x or higher
+- npm or yarn
 
-To learn more about Next.js, take a look at the following resources:
+# TEST PURPOSES
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+use "/paris" to design city page.
