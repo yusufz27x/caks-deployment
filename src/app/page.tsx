@@ -5,9 +5,16 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
+import { AboutModal } from "@/components/modals/about-modal"
+import { SettingsModal } from "@/components/modals/settings-modal"
+import { LicenseModal } from "@/components/modals/license-modal"
+import { Header } from "@/components/header"
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isLicenseOpen, setIsLicenseOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -34,36 +41,11 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10">
         {/* Top Navigation */}
-        <div className="absolute top-4 flex w-full justify-between px-4">
-          <ModeToggle />
-          <div className="relative" ref={menuRef}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="relative z-50"
-            >
-              {isMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-            </Button>
-            
-            {isMenuOpen && (
-              <div className="absolute right-0 top-12 z-50 min-w-[160px] rounded-md border bg-white/90 dark:bg-gray-800/90 p-1 shadow-lg">
-                <button className="w-full rounded-sm px-2 py-1.5 text-left text-sm text-gray-700/90 dark:text-gray-200/90 transition-colors hover:bg-gray-100/90 dark:hover:bg-gray-700/90">
-                  About Us
-                </button>
-                <div className="my-1 h-[1px] bg-gray-200/90 dark:bg-gray-700/90" />
-                <button className="w-full rounded-sm px-2 py-1.5 text-left text-sm text-gray-700/90 dark:text-gray-200/90 transition-colors hover:bg-gray-100/90 dark:hover:bg-gray-700/90">
-                  Settings
-                </button>
-                <div className="my-1 h-[1px] bg-gray-200/90 dark:bg-gray-700/90" />
-                <button className="w-full rounded-sm px-2 py-1.5 text-left text-sm text-gray-700/90 dark:text-gray-200/90 transition-colors hover:bg-gray-100/90 dark:hover:bg-gray-700/90">
-                  License
-                </button>
-              </div>
-            )}
-            
-          </div>
-        </div>
+        <Header 
+          onAboutClick={() => setIsAboutOpen(true)}
+          onSettingsClick={() => setIsSettingsOpen(true)}
+          onLicenseClick={() => setIsLicenseOpen(true)}
+        />
 
         {/* Main Content */}
         <div className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -83,6 +65,11 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <AboutModal open={isAboutOpen} onOpenChange={setIsAboutOpen} />
+      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+      <LicenseModal open={isLicenseOpen} onOpenChange={setIsLicenseOpen} />
     </main>
   )
 }

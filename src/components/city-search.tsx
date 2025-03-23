@@ -5,33 +5,46 @@ import { Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
+import { supabase } from "@/lib/supabaseClient"
 
-// Sample cities data - in a real app, this would come from an API
-const cities = [
-  { value: "paris", label: "Paris, France" },
-  { value: "barcelona", label: "Barcelona, Spain" },
-  { value: "rome", label: "Rome, Italy" },
-  { value: "tokyo", label: "Tokyo, Japan" },
-  { value: "new-york", label: "New York, USA" },
-  { value: "london", label: "London, UK" },
-  { value: "istanbul", label: "Istanbul, Turkey" },
-  { value: "dubai", label: "Dubai, UAE" },
-  { value: "sydney", label: "Sydney, Australia" },
-  { value: "rio-de-janeiro", label: "Rio de Janeiro, Brazil" },
-  { value: "amsterdam", label: "Amsterdam, Netherlands" },
-  { value: "bangkok", label: "Bangkok, Thailand" },
-  { value: "cairo", label: "Cairo, Egypt" },
-  { value: "singapore", label: "Singapore" },
-  { value: "berlin", label: "Berlin, Germany" },
-]
+interface City {
+  value: string
+  label: string
+}
 
 export function CitySearch() {
   const [inputValue, setInputValue] = React.useState("")
   const [showSuggestions, setShowSuggestions] = React.useState(false)
-  const [filteredCities, setFilteredCities] = React.useState<typeof cities>([])
+  const [filteredCities, setFilteredCities] = React.useState<City[]>([])
+  const [cities, setCities] = React.useState<City[]>([])
   const inputRef = React.useRef<HTMLInputElement>(null)
   const commandRef = React.useRef<HTMLDivElement>(null)
   const router = useRouter()
+
+  // Fetch cities from Supabase on component mount
+  React.useEffect(() => {
+    const fetchCities = async () => {
+      const { data, error } = await supabase
+        .from('city')
+        .select('*')
+      
+      if (error) {
+        console.error('Error fetching cities:', error)
+        return
+      }
+
+      if (data) {
+        const formattedCities = data.map(city => ({
+          value: city.name.toLowerCase(),
+          label: city.label
+        }))
+        console.log(formattedCities)
+        setCities(formattedCities)
+      }
+    }
+
+    fetchCities()
+  }, [])
 
   // Filter cities based on input
   React.useEffect(() => {
@@ -48,7 +61,7 @@ export function CitySearch() {
     } else {
       setShowSuggestions(false)
     }
-  }, [inputValue])
+  }, [inputValue, cities])
 
   // Handle click outside to close suggestions
   React.useEffect(() => {
@@ -76,15 +89,21 @@ export function CitySearch() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (inputValue) {
-      // Try to find a matching city
-      const matchedCity = cities.find((city) => city.label.toLowerCase() === inputValue.toLowerCase())
-
-      if (matchedCity) {
-        router.push(`/city/${matchedCity.value}`)
+    if (inputValue.length >= 3) {
+      // First check if we have filtered suggestions
+      if (filteredCities.length > 0) {
+        // Use the first matched suggestion
+        const firstMatch = filteredCities[0]
+        handleSelect(firstMatch.value, firstMatch.label)
       } else {
-        // Handle search with free text
-        router.push(`/search?q=${encodeURIComponent(inputValue)}`)
+        // If no suggestions, try to find an exact match
+        const matchedCity = cities.find((city) => city.label.toLowerCase() === inputValue.toLowerCase())
+        if (matchedCity) {
+          router.push(`/city/${matchedCity.value}`)
+        } else {
+          // Handle search with free text
+          router.push(`/search?q=${encodeURIComponent(inputValue)}`)
+        }
       }
     }
   }
