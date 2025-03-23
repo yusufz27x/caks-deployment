@@ -34,7 +34,7 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
   return (
     <main className="min-h-screen">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/10 backdrop-blur-sm border-b">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/10 backdrop-blur-sm border-b border-transparent dark:border-transparent">
         <Header 
           onAboutClick={() => setIsAboutOpen(true)}
           onSettingsClick={() => setIsSettingsOpen(true)}
@@ -43,8 +43,8 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
       </div>
 
       {/* Hero Section */}
-      <section className="relative h-[50vh] pt-[64px]">
-        <div className="absolute inset-0">
+      <section className="relative h-[50vh] pt-[64px] -mt-[1px]">
+        <div className="absolute inset-0 top-0">
           <Image
             src={cityBasicData.image || "/placeholder.svg"}
             alt={cityBasicData.name}
@@ -52,6 +52,7 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
             className="object-cover brightness-75"
             priority
           />
+          <div className="absolute inset-0 bg-black/0 dark:bg-black/40 transition-colors duration-300" />
         </div>
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
           <h1 className="mb-2 text-4xl font-bold text-white md:text-5xl">{cityBasicData.name}</h1>
@@ -62,14 +63,14 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
       {/* City Description */}
       <section className="py-8 bg-muted/30">
         <div className="container mx-auto px-4">
-          <p className="text-lg text-center max-w-3xl mx-auto">{cityBasicData.description}</p>
+          <p className="text-lg text-center max-w-3xl mx-auto text-black/90 dark:text-white/90">{cityBasicData.description}</p>
         </div>
       </section>
 
       {error && (
         <section className="py-12">
           <div className="container mx-auto px-4">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded relative">
               <strong className="font-bold">Error:</strong>
               <span className="block sm:inline"> {error}</span>
             </div>
@@ -82,19 +83,19 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
         <div className="container mx-auto px-4">
           <Tabs defaultValue="attractions" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="attractions" className="flex items-center">
+              <TabsTrigger value="attractions" className="flex items-center border-gray-200 dark:border-gray-800 rounded-md">
                 <MapPin className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Attractions</span>
               </TabsTrigger>
-              <TabsTrigger value="food" className="flex items-center">
+              <TabsTrigger value="food" className="flex items-center  border-gray-200 dark:border-gray-800 rounded-md">
                 <Utensils className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Cuisine</span>
               </TabsTrigger>
-              <TabsTrigger value="accommodations" className="flex items-center">
+              <TabsTrigger value="accommodations" className="flex items-center  border-gray-200 dark:border-gray-800 rounded-md">
                 <Hotel className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Accommodations</span>
               </TabsTrigger>
-              <TabsTrigger value="tours" className="flex items-center">
+              <TabsTrigger value="tours" className="flex items-center  border-gray-200 dark:border-gray-800 rounded-md">
                 <Compass className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Activities</span>
               </TabsTrigger>
@@ -103,19 +104,19 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading city data...</span>
+                <span className="ml-2 text-black/90 dark:text-white/90">Loading city data...</span>
               </div>
             ) : (
               <>
                 {/* Attractions Tab */}
-                <TabsContent value="attractions" className="mt-6">
-                  <h2 className="text-2xl font-bold mb-6">Top Attractions in {cityBasicData.name}</h2>
+                <TabsContent value="attractions" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Top Attractions in {cityBasicData.name}</h2>
                   {attractions.length === 0 ? (
-                    <p>No attraction data available.</p>
+                    <p className="text-black/90 dark:text-white/90">No attraction data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {attractions.map((attraction) => (
-                        <Card key={attraction.id} className="overflow-hidden">
+                        <Card key={attraction.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
                           <div className="relative h-48 w-full bg-muted">
                             {attraction.pictures && attraction.pictures.length > 0 ? (
                               <Image
@@ -130,21 +131,21 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                               </div>
                             )}
                             <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 backdrop-blur-sm">
+                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
                                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
                                 {attraction.rank ? (attraction.rank / 20).toFixed(1) : "N/A"}
                               </Badge>
                             </div>
                           </div>
                           <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2">{attraction.name}</h3>
-                            <p className="text-muted-foreground">
+                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{attraction.name}</h3>
+                            <p className="text-black/80 dark:text-white/80">
                               {attraction.description?.text || "No description available."}
                             </p>
                             {attraction.tags && attraction.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {attraction.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
+                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
                                     {tag}
                                   </Badge>
                                 ))}
@@ -158,14 +159,14 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                 </TabsContent>
 
                 {/* Food Tab */}
-                <TabsContent value="food" className="mt-6">
-                  <h2 className="text-2xl font-bold mb-6">Where to Eat in {cityBasicData.name}</h2>
+                <TabsContent value="food" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Where to Eat in {cityBasicData.name}</h2>
                   {restaurants.length === 0 ? (
-                    <p>No restaurant data available.</p>
+                    <p className="text-black/90 dark:text-white/90">No restaurant data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {restaurants.map((restaurant) => (
-                        <Card key={restaurant.id} className="overflow-hidden">
+                        <Card key={restaurant.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
                           <div className="relative h-48 w-full bg-muted">
                             {restaurant.pictures && restaurant.pictures.length > 0 ? (
                               <Image
@@ -180,21 +181,21 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                               </div>
                             )}
                             <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 backdrop-blur-sm">
+                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
                                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
                                 {restaurant.rank ? (restaurant.rank / 20).toFixed(1) : "N/A"}
                               </Badge>
                             </div>
                           </div>
                           <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2">{restaurant.name}</h3>
-                            <p className="text-muted-foreground">
+                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{restaurant.name}</h3>
+                            <p className="text-black/80 dark:text-white/80">
                               {restaurant.description?.text || "No description available."}
                             </p>
                             {restaurant.tags && restaurant.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {restaurant.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
+                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
                                     {tag}
                                   </Badge>
                                 ))}
@@ -208,14 +209,14 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                 </TabsContent>
 
                 {/* Accommodations Tab */}
-                <TabsContent value="accommodations" className="mt-6">
-                  <h2 className="text-2xl font-bold mb-6">Where to Stay in {cityBasicData.name}</h2>
+                <TabsContent value="accommodations" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Where to Stay in {cityBasicData.name}</h2>
                   {hotels.length === 0 ? (
-                    <p>No hotel data available.</p>
+                    <p className="text-black/90 dark:text-white/90">No hotel data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {hotels.map((hotel) => (
-                        <Card key={hotel.id} className="overflow-hidden">
+                        <Card key={hotel.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
                           <div className="relative h-48 w-full bg-muted">
                             {hotel.pictures && hotel.pictures.length > 0 ? (
                               <Image
@@ -230,21 +231,21 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                               </div>
                             )}
                             <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 backdrop-blur-sm">
+                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
                                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
                                 {hotel.rank ? (hotel.rank / 20).toFixed(1) : "N/A"}
                               </Badge>
                             </div>
                           </div>
                           <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2">{hotel.name}</h3>
-                            <p className="text-muted-foreground">
+                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{hotel.name}</h3>
+                            <p className="text-black/80 dark:text-white/80">
                               {hotel.description?.text || "No description available."}
                             </p>
                             {hotel.tags && hotel.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {hotel.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
+                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
                                     {tag}
                                   </Badge>
                                 ))}
@@ -258,14 +259,14 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                 </TabsContent>
 
                 {/* Activities Tab */}
-                <TabsContent value="tours" className="mt-6">
-                  <h2 className="text-2xl font-bold mb-6">Activities in {cityBasicData.name}</h2>
+                <TabsContent value="tours" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Activities in {cityBasicData.name}</h2>
                   {activities.length === 0 ? (
-                    <p>No activity data available.</p>
+                    <p className="text-black/90 dark:text-white/90">No activity data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {activities.map((activity) => (
-                        <Card key={activity.id} className="overflow-hidden">
+                        <Card key={activity.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
                           <div className="relative h-48 w-full bg-muted">
                             {activity.pictures && activity.pictures.length > 0 ? (
                               <Image
@@ -280,21 +281,21 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                               </div>
                             )}
                             <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 backdrop-blur-sm">
+                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
                                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
                                 {activity.rank ? (activity.rank / 20).toFixed(1) : "N/A"}
                               </Badge>
                             </div>
                           </div>
                           <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2">{activity.name}</h3>
-                            <p className="text-muted-foreground">
+                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{activity.name}</h3>
+                            <p className="text-black/80 dark:text-white/80">
                               {activity.description?.text || "No description available."}
                             </p>
                             {activity.tags && activity.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {activity.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
+                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
                                     {tag}
                                   </Badge>
                                 ))}
@@ -315,8 +316,8 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
       {/* AI Assistant Prompt */}
       <section className="py-12 bg-primary/5">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-4">Need Personalized Recommendations?</h2>
-          <p className="mb-6 max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">Need Personalized Recommendations?</h2>
+          <p className="mb-6 max-w-2xl mx-auto text-black/90 dark:text-white/90">
             Our AI assistant can help you plan the perfect trip to {cityBasicData.name} based on your preferences.
           </p>
           <Button asChild size="lg">
