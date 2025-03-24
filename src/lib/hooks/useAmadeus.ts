@@ -6,15 +6,6 @@ interface AmadeusHookState {
   data: any | null;
 }
 
-interface FlightSearchParams {
-  originLocationCode: string;
-  destinationLocationCode: string;
-  departureDate: string;
-  returnDate?: string;
-  adults?: string;
-  travelClass?: string;
-}
-
 interface HotelSearchParams {
   cityCode: string;
   checkInDate: string;
@@ -35,33 +26,6 @@ export function useAmadeus() {
     error: null,
     data: null
   });
-
-  const searchFlights = async (params: FlightSearchParams) => {
-    setState({ loading: true, error: null, data: null });
-    
-    try {
-      const queryParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-      
-      const response = await fetch(`/api/amadeus/flights?${queryParams.toString()}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch flight offers');
-      }
-      
-      setState({ loading: false, error: null, data });
-      return data;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Unknown error occurred';
-      setState({ loading: false, error: errorMessage, data: null });
-      throw error;
-    }
-  };
   
   const searchHotels = async (params: HotelSearchParams) => {
     setState({ loading: true, error: null, data: null });
@@ -119,7 +83,6 @@ export function useAmadeus() {
   
   return {
     ...state,
-    searchFlights,
     searchHotels,
     searchLocations
   };

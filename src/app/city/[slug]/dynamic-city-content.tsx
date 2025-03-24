@@ -5,13 +5,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MapPin, Utensils, Hotel, Compass, Star, ExternalLink, Loader2 } from "lucide-react"
-import { Header } from "@/components/header"
+import { MapPin, Utensils, Hotel, Star, ExternalLink, Loader2 } from "lucide-react"
+import { Header } from "@/components/header/header"
 import { useState } from "react"
-import { AboutModal } from "@/components/modals/about-modal"
-import { SettingsModal } from "@/components/modals/settings-modal"
-import { LicenseModal } from "@/components/modals/license-modal"
+import { AboutModal } from "@/components/header/header-modals/about-modal"
+import { SettingsModal } from "@/components/header/header-modals/settings-modal"
+import { LicenseModal } from "@/components/header/header-modals/license-modal"
 import { useCityData } from "@/lib/hooks/useCityData"
+import { CitySearch } from "@/components/shared/city-search"
 
 interface CityBasicData {
   name: string
@@ -67,6 +68,16 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
         </div>
       </section>
 
+      {/* City Search */}
+      <section className="py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-4 text-center text-black dark:text-white">Explore Another City</h2>
+            <CitySearch />
+          </div>
+        </div>
+      </section>
+
       {error && (
         <section className="py-12">
           <div className="container mx-auto px-4">
@@ -82,22 +93,18 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
       <section className="py-12">
         <div className="container mx-auto px-4">
           <Tabs defaultValue="attractions" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="attractions" className="flex items-center border-gray-200 dark:border-gray-800 rounded-md">
-                <MapPin className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Attractions</span>
+            <TabsList className="grid w-full grid-cols-3 gap-4 p-4">
+              <TabsTrigger value="attractions" className="flex items-center justify-center border-gray-200 dark:border-gray-800 rounded-md h-12 text-base">
+                <MapPin className="h-5 w-5 mr-2" />
+                <span>Attractions</span>
               </TabsTrigger>
-              <TabsTrigger value="food" className="flex items-center  border-gray-200 dark:border-gray-800 rounded-md">
-                <Utensils className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Cuisine</span>
+              <TabsTrigger value="food" className="flex items-center justify-center border-gray-200 dark:border-gray-800 rounded-md h-12 text-base">
+                <Utensils className="h-5 w-5 mr-2" />
+                <span>Kitchen</span>
               </TabsTrigger>
-              <TabsTrigger value="accommodations" className="flex items-center  border-gray-200 dark:border-gray-800 rounded-md">
-                <Hotel className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Accommodations</span>
-              </TabsTrigger>
-              <TabsTrigger value="tours" className="flex items-center  border-gray-200 dark:border-gray-800 rounded-md">
-                <Compass className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Activities</span>
+              <TabsTrigger value="accommodations" className="flex items-center justify-center border-gray-200 dark:border-gray-800 rounded-md h-12 text-base">
+                <Hotel className="h-5 w-5 mr-2" />
+                <span>Stay</span>
               </TabsTrigger>
             </TabsList>
 
@@ -245,56 +252,6 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                             {hotel.tags && hotel.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {hotel.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Activities Tab */}
-                <TabsContent value="tours" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
-                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Activities in {cityBasicData.name}</h2>
-                  {activities.length === 0 ? (
-                    <p className="text-black/90 dark:text-white/90">No activity data available.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {activities.map((activity) => (
-                        <Card key={activity.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
-                          <div className="relative h-48 w-full bg-muted">
-                            {activity.pictures && activity.pictures.length > 0 ? (
-                              <Image
-                                src={activity.pictures[0]}
-                                alt={activity.name}
-                                fill
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <Compass className="h-12 w-12 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                {activity.rank ? (activity.rank / 20).toFixed(1) : "N/A"}
-                              </Badge>
-                            </div>
-                          </div>
-                          <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{activity.name}</h3>
-                            <p className="text-black/80 dark:text-white/80">
-                              {activity.description?.text || "No description available."}
-                            </p>
-                            {activity.tags && activity.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {activity.tags.slice(0, 3).map((tag, index) => (
                                   <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
                                     {tag}
                                   </Badge>

@@ -1,20 +1,14 @@
 "use client"
-import { ModeToggle } from "@/components/mode-toggle"
-import { CitySearch } from "@/components/city-search"
+import { ModeToggle } from "@/components/shared/mode-toggle"
+import { CitySearch } from "@/components/shared/city-search"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
-import { AboutModal } from "@/components/modals/about-modal"
-import { SettingsModal } from "@/components/modals/settings-modal"
-import { LicenseModal } from "@/components/modals/license-modal"
-import { Header } from "@/components/header"
+import { Header } from "@/components/header/header"
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isAboutOpen, setIsAboutOpen] = useState(false)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isLicenseOpen, setIsLicenseOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -41,11 +35,7 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10">
         {/* Top Navigation */}
-        <Header 
-          onAboutClick={() => setIsAboutOpen(true)}
-          onSettingsClick={() => setIsSettingsOpen(true)}
-          onLicenseClick={() => setIsLicenseOpen(true)}
-        />
+        <Header />
 
         {/* Main Content */}
         <div className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -65,11 +55,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      <AboutModal open={isAboutOpen} onOpenChange={setIsAboutOpen} />
-      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-      <LicenseModal open={isLicenseOpen} onOpenChange={setIsLicenseOpen} />
     </main>
   )
 }

@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { ModeToggle } from "@/components/mode-toggle"
+import { ModeToggle } from "@/components/shared/mode-toggle"
 
 interface SettingsModalProps {
   open: boolean

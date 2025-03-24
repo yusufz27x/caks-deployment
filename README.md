@@ -13,9 +13,9 @@ CAKS (City Attraction Kitchen Stay) is a comprehensive travel planning platform 
 ## 🛠️ Technologies
 
 - **Frontend**: Next.js, React, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui components
+- **Styling**: Tailwind CSS, shadcn and lucide user interface components
 - **State Management**: React Hooks
-- **Database**: Supabase (planned)
+- **Database**: Supabase
 - **AI Integration**: Google Gemini API (planned)
 - **Deployment**: Vercel
 

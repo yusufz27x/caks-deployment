@@ -20,13 +20,6 @@ declare module 'amadeus' {
     constructor(options: AmadeusOptions);
     
     shopping: {
-      flightOffersSearch: {
-        get(params: any): Promise<AmadeusResponse>;
-        post(params: any): Promise<AmadeusResponse>;
-      };
-      flightDestinations: {
-        get(params: any): Promise<AmadeusResponse>;
-      };
       hotelOffers: {
         get(params: any): Promise<AmadeusResponse>;
       };
@@ -41,9 +34,6 @@ declare module 'amadeus' {
             get(params: any): Promise<AmadeusResponse>;
           };
         };
-      };
-      airlines: {
-        get(params: any): Promise<AmadeusResponse>;
       };
     };
   }
