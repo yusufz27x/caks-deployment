@@ -5,12 +5,20 @@ import { Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
-import { supabase } from "@/lib/supabaseClient"
+// import { supabase } from "@/lib/supabaseClient"
 
 interface City {
   value: string
   label: string
 }
+
+const mockCities: City[] = [
+  { value: "paris", label: "Paris, France" },
+  { value: "london", label: "London, United Kingdom" },
+  { value: "rome", label: "Rome, Italy" },
+  { value: "new-york", label: "New York City, United States" },
+  { value: "tokyo", label: "Tokyo, Japan" },
+];
 
 export function CitySearch() {
   const [inputValue, setInputValue] = React.useState("")
@@ -23,27 +31,28 @@ export function CitySearch() {
 
   // Fetch cities from Supabase on component mount
   React.useEffect(() => {
-    const fetchCities = async () => {
-      const { data, error } = await supabase
-        .from('city')
-        .select('*')
+    // const fetchCities = async () => {
+    //   const { data, error } = await supabase
+    //     .from('city')
+    //     .select('*')
       
-      if (error) {
-        console.error('Error fetching cities:', error)
-        return
-      }
+    //   if (error) {
+    //     console.error('Error fetching cities:', error)
+    //     return
+    //   }
 
-      if (data) {
-        const formattedCities = data.map(city => ({
-          value: city.name.toLowerCase(),
-          label: city.label
-        }))
-        console.log(formattedCities)
-        setCities(formattedCities)
-      }
-    }
+    //   if (data) {
+    //     const formattedCities = data.map(city => ({
+    //       value: city.name.toLowerCase(),
+    //       label: city.label
+    //     }))
+    //     console.log(formattedCities)
+    //     setCities(formattedCities)
+    //   }
+    // }
 
-    fetchCities()
+    // fetchCities()
+    setCities(mockCities);
   }, [])
 
   // Filter cities based on input

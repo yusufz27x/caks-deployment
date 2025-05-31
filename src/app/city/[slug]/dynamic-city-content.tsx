@@ -122,41 +122,60 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                     <p className="text-black/90 dark:text-white/90">No attraction data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {attractions.map((attraction) => (
-                        <Card key={attraction.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
-                          <div className="relative h-48 w-full bg-muted">
-                            {attraction.pictures && attraction.pictures.length > 0 ? (
+                      {attractions.map((item) => (
+                        <Card key={item.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
+                          <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+                            {item.source === 'amadeus' && item.pictures && item.pictures.length > 0 ? (
                               <Image
-                                src={attraction.pictures[0]}
-                                alt={attraction.name}
+                                src={item.pictures[0]}
+                                alt={item.name}
                                 fill
                                 className="object-cover"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <MapPin className="h-12 w-12 text-muted-foreground" />
+                              <MapPin className="h-12 w-12 text-muted-foreground" />
+                            )}
+                            {item.source === 'amadeus' && item.rank != null && (
+                              <div className="absolute top-2 right-2">
+                                <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                  {(item.rank / 20).toFixed(1)}
+                                </Badge>
                               </div>
                             )}
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                {attraction.rank ? (attraction.rank / 20).toFixed(1) : "N/A"}
-                              </Badge>
-                            </div>
                           </div>
                           <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{attraction.name}</h3>
-                            <p className="text-black/80 dark:text-white/80">
-                              {attraction.description?.text || "No description available."}
-                            </p>
-                            {attraction.tags && attraction.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {attraction.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag}
+                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{item.name}</h3>
+                            {item.source === 'amadeus' && item.description?.text && (
+                              <p className="text-sm text-black/80 dark:text-white/80 mb-2">
+                                {item.description.text}
+                              </p>
+                            )}
+                            {item.source === 'geoapify' && item.formattedAddress && (
+                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.formattedAddress}</p>
+                            )}
+                            {item.tags && item.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2 mb-2">
+                                {item.tags.slice(0, 3).map((tag: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs capitalize text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
+                                    {tag.replace(/_/g, ' ')}
                                   </Badge>
                                 ))}
                               </div>
+                            )}
+                            {(item.source === 'geoapify' && item.geoCode?.latitude && item.geoCode?.longitude) && (
+                                <Button variant="outline" size="sm" asChild className="mt-2 mr-2">
+                                  <Link href={`https://www.google.com/maps/search/?api=1&query=${item.geoCode.latitude},${item.geoCode.longitude}`} target="_blank" rel="noopener noreferrer">
+                                    <MapPin className="h-4 w-4 mr-1" /> View Map
+                                  </Link>
+                                </Button>
+                            )}
+                            {(item.source === 'geoapify' && item.datasource?.raw?.website) && (
+                                <Button variant="outline" size="sm" asChild className="mt-2">
+                                  <Link href={item.datasource.raw.website.startsWith('http') ? item.datasource.raw.website : `http://${item.datasource.raw.website}`} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-1" /> Website
+                                  </Link>
+                                </Button>
                             )}
                           </CardContent>
                         </Card>
@@ -172,41 +191,60 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
                     <p className="text-black/90 dark:text-white/90">No restaurant data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {restaurants.map((restaurant) => (
-                        <Card key={restaurant.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
-                          <div className="relative h-48 w-full bg-muted">
-                            {restaurant.pictures && restaurant.pictures.length > 0 ? (
+                      {restaurants.map((item) => (
+                        <Card key={item.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
+                           <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+                            {item.source === 'amadeus' && item.pictures && item.pictures.length > 0 ? (
                               <Image
-                                src={restaurant.pictures[0]}
-                                alt={restaurant.name}
+                                src={item.pictures[0]}
+                                alt={item.name}
                                 fill
                                 className="object-cover"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <Utensils className="h-12 w-12 text-muted-foreground" />
+                              <Utensils className="h-12 w-12 text-muted-foreground" />
+                            )}
+                            {item.source === 'amadeus' && item.rank != null && (
+                              <div className="absolute top-2 right-2">
+                                <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                  {(item.rank / 20).toFixed(1)}
+                                </Badge>
                               </div>
                             )}
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                {restaurant.rank ? (restaurant.rank / 20).toFixed(1) : "N/A"}
-                              </Badge>
-                            </div>
                           </div>
                           <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{restaurant.name}</h3>
-                            <p className="text-black/80 dark:text-white/80">
-                              {restaurant.description?.text || "No description available."}
-                            </p>
-                            {restaurant.tags && restaurant.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {restaurant.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag}
+                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{item.name}</h3>
+                            {item.source === 'amadeus' && item.description?.text && (
+                              <p className="text-sm text-black/80 dark:text-white/80 mb-2">
+                                {item.description.text}
+                              </p>
+                            )}
+                            {item.source === 'geoapify' && item.formattedAddress && (
+                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.formattedAddress}</p>
+                            )}
+                            {item.tags && item.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2 mb-2">
+                                {item.tags.slice(0, 3).map((tag: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs capitalize text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
+                                    {tag.replace(/_/g, ' ')}
                                   </Badge>
                                 ))}
                               </div>
+                            )}
+                             {(item.source === 'geoapify' && item.geoCode?.latitude && item.geoCode?.longitude) && (
+                                <Button variant="outline" size="sm" asChild className="mt-2 mr-2">
+                                  <Link href={`https://www.google.com/maps/search/?api=1&query=${item.geoCode.latitude},${item.geoCode.longitude}`} target="_blank" rel="noopener noreferrer">
+                                    <MapPin className="h-4 w-4 mr-1" /> View Map
+                                  </Link>
+                                </Button>
+                            )}
+                            {(item.source === 'geoapify' && item.datasource?.raw?.website) && (
+                                <Button variant="outline" size="sm" asChild className="mt-2">
+                                  <Link href={item.datasource.raw.website.startsWith('http') ? item.datasource.raw.website : `http://${item.datasource.raw.website}`} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-1" /> Website
+                                  </Link>
+                                </Button>
                             )}
                           </CardContent>
                         </Card>
@@ -217,46 +255,65 @@ export function DynamicCityContent({ citySlug, cityBasicData }: DynamicCityConte
 
                 {/* Accommodations Tab */}
                 <TabsContent value="accommodations" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
-                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Where to Stay in {cityBasicData.name}</h2>
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Places to Stay in {cityBasicData.name}</h2>
                   {hotels.length === 0 ? (
-                    <p className="text-black/90 dark:text-white/90">No hotel data available.</p>
+                    <p className="text-black/90 dark:text-white/90">No accommodation data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {hotels.map((hotel) => (
-                        <Card key={hotel.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
-                          <div className="relative h-48 w-full bg-muted">
-                            {hotel.pictures && hotel.pictures.length > 0 ? (
+                      {hotels.map((item) => (
+                        <Card key={item.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
+                          <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+                            {item.source === 'amadeus' && item.pictures && item.pictures.length > 0 ? (
                               <Image
-                                src={hotel.pictures[0]}
-                                alt={hotel.name}
+                                src={item.pictures[0]}
+                                alt={item.name}
                                 fill
                                 className="object-cover"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <Hotel className="h-12 w-12 text-muted-foreground" />
+                              <Hotel className="h-12 w-12 text-muted-foreground" />
+                            )}
+                            {item.source === 'amadeus' && item.rank != null && (
+                              <div className="absolute top-2 right-2">
+                                <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                  {(item.rank / 20).toFixed(1)}
+                                </Badge>
                               </div>
                             )}
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="secondary" className="flex items-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-black dark:text-white">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                {hotel.rank ? (hotel.rank / 20).toFixed(1) : "N/A"}
-                              </Badge>
-                            </div>
                           </div>
                           <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{hotel.name}</h3>
-                            <p className="text-black/80 dark:text-white/80">
-                              {hotel.description?.text || "No description available."}
-                            </p>
-                            {hotel.tags && hotel.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {hotel.tags.slice(0, 3).map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag}
+                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{item.name}</h3>
+                            {item.source === 'amadeus' && item.description?.text && (
+                              <p className="text-sm text-black/80 dark:text-white/80 mb-2">
+                                {item.description.text}
+                              </p>
+                            )}
+                            {item.source === 'geoapify' && item.formattedAddress && (
+                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.formattedAddress}</p>
+                            )}
+                            {item.tags && item.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2 mb-2">
+                                {item.tags.slice(0, 3).map((tag: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs capitalize text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
+                                    {tag.replace(/_/g, ' ')}
                                   </Badge>
                                 ))}
                               </div>
+                            )}
+                            {(item.source === 'geoapify' && item.geoCode?.latitude && item.geoCode?.longitude) && (
+                                <Button variant="outline" size="sm" asChild className="mt-2 mr-2">
+                                  <Link href={`https://www.google.com/maps/search/?api=1&query=${item.geoCode.latitude},${item.geoCode.longitude}`} target="_blank" rel="noopener noreferrer">
+                                    <MapPin className="h-4 w-4 mr-1" /> View Map
+                                  </Link>
+                                </Button>
+                            )}
+                            {(item.source === 'geoapify' && item.datasource?.raw?.website) && (
+                                <Button variant="outline" size="sm" asChild className="mt-2">
+                                  <Link href={item.datasource.raw.website.startsWith('http') ? item.datasource.raw.website : `http://${item.datasource.raw.website}`} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-1" /> Website
+                                  </Link>
+                                </Button>
                             )}
                           </CardContent>
                         </Card>

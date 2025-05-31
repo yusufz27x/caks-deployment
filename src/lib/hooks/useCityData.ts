@@ -8,17 +8,24 @@ interface Coordinates {
 interface PointOfInterest {
   id: string;
   name: string;
-  category: string;
-  rank: number;
+  category: string; // This will now also include Geoapify categories
+  rank?: number; // Optional as Geoapify doesn't provide rank
   geoCode: {
     latitude: number;
     longitude: number;
   };
-  tags: string[];
+  tags?: string[]; // Optional as Geoapify provides 'categories'
   pictures?: string[];
   description?: {
-    text: string;
+    text: string; // For Amadeus
   };
+  // Geoapify specific fields we might want to use directly or map
+  address_line1?: string;
+  address_line2?: string;
+  datasource?: any;
+  formattedAddress?: string; // Geoapify formatted address
+  // Add a source field to distinguish between Amadeus and Geoapify data
+  source?: 'amadeus' | 'geoapify';
 }
 
 interface CityDataState {
@@ -28,7 +35,8 @@ interface CityDataState {
   attractions: PointOfInterest[];
   restaurants: PointOfInterest[];
   hotels: PointOfInterest[];
-  activities: PointOfInterest[];
+  activities: PointOfInterest[]; // Keeping activities separate as Geoapify categories might not map well
+  // recommendations: any[]; // Removed: Geoapify data will be merged
 }
 
 // Predefined coordinates for popular cities
@@ -104,7 +112,8 @@ export function useCityData(citySlug: string) {
     attractions: [],
     restaurants: [],
     hotels: [],
-    activities: []
+    activities: [],
+    // recommendations: [], // Removed
   });
   const [retries, setRetries] = useState(0);
   const MAX_RETRIES = 2;
@@ -114,11 +123,9 @@ export function useCityData(citySlug: string) {
       try {
         setState(prev => ({ ...prev, loading: true, error: null }));
         
-        // Get coordinates for the city
         let coordinates = CITY_COORDINATES[citySlug];
         
         if (!coordinates) {
-          // If not in predefined list, return error and use fallback data if available
           setState(prev => ({
             ...prev,
             loading: false,
@@ -131,42 +138,57 @@ export function useCityData(citySlug: string) {
           return;
         }
 
-        // Use Promise.allSettled to ensure all requests are attempted regardless of individual failures
-        const [attractionsResult, restaurantsResult, hotelsResult, activitiesResult] = await Promise.allSettled([
+        const [attractionsResult, restaurantsResult, hotelsResult, activitiesResult, geoapifyPlacesResult] = await Promise.allSettled([
           fetch(`/api/amadeus/poi?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&categoryFilter=SIGHTS`),
           fetch(`/api/amadeus/poi?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&categoryFilter=RESTAURANT`),
           fetch(`/api/amadeus/poi?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&categoryFilter=HOTEL`),
-          fetch(`/api/amadeus/poi?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&categoryFilter=ENTERTAINMENT,SHOPPING,SPORTS`)
+          fetch(`/api/amadeus/poi?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&categoryFilter=ENTERTAINMENT,SHOPPING,SPORTS`),
+          fetch(`https://api.geoapify.com/v2/places?categories=tourism,catering.restaurant,accommodation.hotel&filter=circle:${coordinates.longitude},${coordinates.latitude},5000&limit=30&apiKey=${process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY}`)
         ]);
 
-        // Process results
-        const attractionsData = await processResult(attractionsResult, 'attractions', citySlug);
-        const restaurantsData = await processResult(restaurantsResult, 'restaurants', citySlug);
-        const hotelsData = await processResult(hotelsResult, 'hotels', citySlug);
-        const activitiesData = await processResult(activitiesResult, 'activities', citySlug);
+        // Process Amadeus results
+        const amadeusAttractions = await processAmadeusResult(attractionsResult, 'attractions', citySlug);
+        const amadeusRestaurants = await processAmadeusResult(restaurantsResult, 'restaurants', citySlug);
+        const amadeusHotels = await processAmadeusResult(hotelsResult, 'hotels', citySlug);
+        const amadeusActivities = await processAmadeusResult(activitiesResult, 'activities', citySlug);
 
-        // Check if all API calls failed
-        const allFailed = [attractionsData, restaurantsData, hotelsData, activitiesData].every(data => !data);
+        // Process and categorize Geoapify results
+        const { geoapifyAttractions, geoapifyRestaurants, geoapifyHotels } = await processGeoapifyResult(geoapifyPlacesResult as PromiseSettledResult<Response>);
+
+        const amadeusApisFailed = [amadeusAttractions, amadeusRestaurants, amadeusHotels, amadeusActivities].every(data => !data);
         
-        if (allFailed && retries < MAX_RETRIES) {
-          // Retry the operation
+        if (amadeusApisFailed && retries < MAX_RETRIES && !geoapifyPlacesResult.status.startsWith('fulf')) { // Only retry if Geoapify also failed or wasn't attempted
           setRetries(prev => prev + 1);
           return;
         }
+        
+        // Merge data - ensure no duplicates if an ID system is robust
+        // For simplicity, we'll just concatenate. Add de-duplication if needed.
+        const combinedAttractions = [
+          ...(amadeusAttractions || FALLBACK_DATA[citySlug]?.attractions || []),
+          ...geoapifyAttractions
+        ];
+        const combinedRestaurants = [
+          ...(amadeusRestaurants || FALLBACK_DATA[citySlug]?.restaurants || []),
+          ...geoapifyRestaurants
+        ];
+        const combinedHotels = [
+          ...(amadeusHotels || FALLBACK_DATA[citySlug]?.hotels || []),
+          ...geoapifyHotels
+        ];
 
         setState({
           loading: false,
-          error: allFailed ? "Failed to fetch data from Amadeus API. Using fallback data." : null,
+          error: amadeusApisFailed && geoapifyPlacesResult.status !== 'fulfilled' ? "Failed to fetch data from all sources. Using fallback data." : null,
           coordinates,
-          attractions: attractionsData || FALLBACK_DATA[citySlug]?.attractions || [],
-          restaurants: restaurantsData || FALLBACK_DATA[citySlug]?.restaurants || [],
-          hotels: hotelsData || FALLBACK_DATA[citySlug]?.hotels || [],
-          activities: activitiesData || FALLBACK_DATA[citySlug]?.activities || []
+          attractions: combinedAttractions,
+          restaurants: combinedRestaurants,
+          hotels: combinedHotels,
+          activities: amadeusActivities || FALLBACK_DATA[citySlug]?.activities || [],
         });
+
       } catch (error: any) {
         console.error('Error fetching city data:', error);
-        
-        // Use fallback data if available
         setState(prev => ({
           ...prev,
           loading: false,
@@ -174,18 +196,61 @@ export function useCityData(citySlug: string) {
           attractions: FALLBACK_DATA[citySlug]?.attractions || [],
           restaurants: FALLBACK_DATA[citySlug]?.restaurants || [],
           hotels: FALLBACK_DATA[citySlug]?.hotels || [],
-          activities: FALLBACK_DATA[citySlug]?.activities || []
+          activities: FALLBACK_DATA[citySlug]?.activities || [],
         }));
       }
     };
 
-    // Helper function to process API results
-    async function processResult(result: PromiseSettledResult<Response>, type: string, citySlug: string) {
+    async function processAmadeusResult(result: PromiseSettledResult<Response>, type: string, citySlug: string): Promise<PointOfInterest[] | null> {
       if (result.status === 'fulfilled' && result.value.ok) {
         const data = await result.value.json();
-        return data?.data || FALLBACK_DATA[citySlug]?.[type as keyof typeof FALLBACK_DATA[typeof citySlug]] || [];
+        const pois = data?.data || FALLBACK_DATA[citySlug]?.[type as keyof typeof FALLBACK_DATA[typeof citySlug]] || [];
+        return pois.map((poi: any) => ({ ...poi, source: 'amadeus' })) as PointOfInterest[];
       }
       return null;
+    }
+
+    async function processGeoapifyResult(result: PromiseSettledResult<Response>): Promise<{ geoapifyAttractions: PointOfInterest[], geoapifyRestaurants: PointOfInterest[], geoapifyHotels: PointOfInterest[] }> {
+      const categorizedResults = {
+        geoapifyAttractions: [] as PointOfInterest[],
+        geoapifyRestaurants: [] as PointOfInterest[],
+        geoapifyHotels: [] as PointOfInterest[],
+      };
+
+      if (result.status === 'fulfilled' && result.value.ok) {
+        const data = await result.value.json();
+        const features = data?.features || [];
+
+        features.forEach((feature: any) => {
+          const props = feature.properties;
+          const poi: PointOfInterest = {
+            id: props.osm_id || props.wikidata || `${props.lat}_${props.lon}_${Date.now()}`, // Ensure unique ID
+            name: props.name || props.street || 'Unnamed Place',
+            category: props.categories?.join(', ') || 'Unknown', // Geoapify categories
+            geoCode: { latitude: props.lat, longitude: props.lon },
+            tags: props.categories,
+            address_line1: props.address_line1,
+            address_line2: props.address_line2,
+            formattedAddress: props.formatted,
+            datasource: props.datasource,
+            source: 'geoapify',
+            // Amadeus specific fields like rank, pictures, description will be undefined
+          };
+
+          // Categorize based on Geoapify categories
+          if (props.categories?.includes('tourism') || props.categories?.includes('leisure') || props.categories?.includes('entertainment')) {
+            categorizedResults.geoapifyAttractions.push(poi);
+          } else if (props.categories?.includes('catering') || props.categories?.includes('catering.restaurant')) {
+            categorizedResults.geoapifyRestaurants.push(poi);
+          } else if (props.categories?.includes('accommodation') || props.categories?.includes('accommodation.hotel')) {
+            categorizedResults.geoapifyHotels.push(poi);
+          }
+          // You might want to add more sophisticated categorization logic here
+        });
+      } else if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value.ok) ) {
+        console.error('Geoapify API request failed:', result.status === 'rejected' ? result.reason : (result.value ? result.value.status : 'Unknown error'));
+      }
+      return categorizedResults;
     }
     
     fetchCityData();
