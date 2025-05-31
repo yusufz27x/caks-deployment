@@ -3,21 +3,101 @@ import Link from "next/link"
 import { DynamicCityContent } from "./dynamic-city-content"
 import type { Coordinates } from "@/lib/hooks/useCityData" // Import Coordinates type
 
-// Removed hardcoded cityData object
-// Removed generateStaticParams function
-
-interface CityPageData {
-  slug: string;
+// Define the structure for individual items (attractions, kitchens, stays)
+interface PlaceItem {
   name: string;
-  country: string;
   description: string;
-  image: string;
-  coordinates: Coordinates | null;
+  website?: string; // Optional as it might be "N/A"
+  googleMapsLink?: string; // Optional
 }
 
+// Updated CityPageData to match Gemini API response
+interface CityPageData {
+  slug: string; // Will be derived from params
+  cityName: string;
+  country: string;
+  cityDescription: string;
+  coordinates: Coordinates | null;
+  image: string; // Image will always be a string after processing
+  attractions: PlaceItem[];
+  kitchens: PlaceItem[];
+  stays: PlaceItem[];
+  // Add any other fields that might come from Gemini or are needed by DynamicCityContent
+  // For example, if DynamicCityContent expects 'name', ensure it's mapped from 'cityName'
+  name: string; // For compatibility with DynamicCityContent if it expects 'name'
+  description: string; // For compatibility, mapped from cityDescription
+}
+
+async function fetchCityDataFromGemini(slug: string): Promise<Omit<CityPageData, 'image'> & { image?: string } | null> {
+  try {
+    const baseURL = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || "http://localhost:3000";
+    const apiURL = new URL("/api/gemini", baseURL).toString();
+
+    const apiResponse = await fetch(apiURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ locationQuery: slug }),
+    });
+
+    if (!apiResponse.ok) {
+      console.error(`Error fetching city data from Gemini for ${slug}: ${apiResponse.status} ${apiResponse.statusText}`);
+      const errorBody = await apiResponse.text();
+      console.error(`Error body: ${errorBody}`);
+      return null;
+    }
+
+    const data = await apiResponse.json();
+
+    if (data.error) {
+      console.error(`Gemini API returned an error for ${slug}: ${data.error}`);
+      if (data.geminiRawResponse) {
+        console.error(`Gemini raw response: ${data.geminiRawResponse}`);
+      }
+      return null;
+    }
+    
+    // Validate if essential data like coordinates is present
+    if (!data.coordinates || typeof data.coordinates.latitude === 'undefined' || typeof data.coordinates.longitude === 'undefined') {
+        console.warn(`Coordinates missing or invalid for slug: ${slug} from Gemini response.`);
+        // Decide if you want to return null or proceed with partial data
+        // For now, returning null if coordinates are critical
+        return null;
+    }
+
+
+    // Construct CityPageData from the Gemini response
+    const cityPageData: Omit<CityPageData, 'image'> & { image?: string } = {
+      slug: slug,
+      cityName: data.cityName || slug,
+      name: data.cityName || slug, // Mapping for existing components
+      country: data.country || "Unknown",
+      cityDescription: data.cityDescription || `Explore ${data.cityName || slug}.`,
+      description: data.cityDescription || `Explore ${data.cityName || slug}.`, // Mapping
+      coordinates: { // Ensure coordinates are strings as per original Coordinates type
+          latitude: String(data.coordinates.latitude),
+          longitude: String(data.coordinates.longitude),
+      },
+      // Image can be handled similarly to before, or if Gemini provides one
+      // For now, let's assume image will be fetched by getCityImage or a default is used
+      // image: data.imageUrl || `/images/${slug}.jpg`, // Example if Gemini could provide an image URL
+      attractions: data.attractions || [],
+      kitchens: data.kitchens || [],
+      stays: data.stays || [],
+    };
+    return cityPageData;
+  } catch (error) {
+    console.error(`Failed to fetch or process city data for ${slug} from /api/gemini:`, error);
+    return null;
+  }
+}
+
+
+// Keep getCityImage if you still want to use Unsplash as a primary or fallback image source
 async function getCityImage(cityName: string): Promise<string | null> {
   if (!process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY) {
-    console.warn("Unsplash API key not found. Skipping dynamic image fetch.");
+    // console.warn("Unsplash API key not found. Skipping dynamic image fetch."); // Less verbose
     return null;
   }
   try {
@@ -25,9 +105,7 @@ async function getCityImage(cityName: string): Promise<string | null> {
       `https://api.unsplash.com/search/photos?query=${encodeURIComponent(cityName)}&per_page=1&orientation=landscape&client_id=${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
     );
     if (!response.ok) {
-      console.error(`Unsplash API error for ${cityName}: ${response.status} ${response.statusText}`);
-      const errorBody = await response.text();
-      // console.error(`Error body: ${errorBody}`); // Potentially too verbose for general logging
+      // console.error(`Unsplash API error for ${cityName}: ${response.status}`); // Less verbose
       return null;
     }
     const data = await response.json();
@@ -36,64 +114,22 @@ async function getCityImage(cityName: string): Promise<string | null> {
     }
     return null;
   } catch (error) {
-    console.error(`Failed to fetch image from Unsplash for ${cityName}:`, error);
+    // console.error(`Failed to fetch image from Unsplash for ${cityName}:`, error); // Less verbose
     return null;
   }
 }
 
-async function fetchCityBaseData(slug: string): Promise<CityPageData | null> {
-  if (!process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY) {
-    console.error("Geoapify API key not found. Cannot fetch city base data.");
-    return null;
-  }
-  try {
-    const geoResponse = await fetch(
-      `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(slug)}&limit=1&format=json&apiKey=${process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY}`
-    );
-    if (!geoResponse.ok) {
-      console.error(`Geoapify Geocoding API error for ${slug}: ${geoResponse.status} ${geoResponse.statusText}`);
-      return null;
-    }
-    const geoData = await geoResponse.json();
-
-    if (geoData.results && geoData.results.length > 0) {
-      const result = geoData.results[0];
-      const name = result.city || result.name || slug;
-      // Attempt to create a simple description if not directly available
-      let description = `Explore ${name}, ${result.country || 'a vibrant location'}. Discover its top attractions, culinary delights, and comfortable stays.`;
-      if (result.formatted) { // Use formatted address as part of description if available
-        description = `${result.formatted}. ` + description;
-      }
-      
-      const cityPageData: CityPageData = {
-        slug: slug,
-        name: name,
-        country: result.country || "Unknown",
-        description: description, // Replace with a more sophisticated description if available from API or a different source
-        image: `/images/${slug}.jpg`, // Default fallback image, will be overridden by Unsplash
-        coordinates: {
-          latitude: result.lat.toString(),
-          longitude: result.lon.toString(),
-        },
-      };
-      return cityPageData;
-    }
-    console.warn(`No geocoding results found for slug: ${slug}`);
-    return null;
-  } catch (error) {
-    console.error(`Failed to fetch base data for ${slug} from Geoapify:`, error);
-    return null;
-  }
-}
 
 export default async function CityPage({ params }: { params: { slug: string } }) {
-  const cityBaseData = await fetchCityBaseData(params.slug);
+  const { slug } = params; // Destructure slug from params
+  // Fetch all city data, including attractions, kitchens, stays, from Gemini
+  const cityDataFromGemini = await fetchCityDataFromGemini(slug);
 
-  if (!cityBaseData || !cityBaseData.coordinates) {
+  if (!cityDataFromGemini || !cityDataFromGemini.coordinates) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-3xl font-bold mb-4">City Not Found</h1>
-        <p className="mb-8">We couldn't find information for "{params.slug}". Please check the city name or try another search.</p>
+        <p className="mb-8">We couldn't find comprehensive information for "{slug}". This could be due to an issue fetching data or the location not being recognized. Please check the city name or try another search.</p>
         <Button asChild>
           <Link href="/">Return Home</Link>
         </Button>
@@ -101,14 +137,18 @@ export default async function CityPage({ params }: { params: { slug: string } })
     );
   }
 
-  const dynamicImageUrl = await getCityImage(cityBaseData.name);
+  // Fetch dynamic image from Unsplash, using the cityName from Gemini's response
+  const dynamicImageUrl = await getCityImage(cityDataFromGemini.cityName);
   
   const finalCityPageData: CityPageData = {
-    ...cityBaseData,
-    image: dynamicImageUrl || cityBaseData.image, // Use fetched Unsplash image or the default fallback
+    ...cityDataFromGemini,
+    // Ensure image is always a string. Prioritize Unsplash, then Gemini (if any), then a default.
+    image: dynamicImageUrl || cityDataFromGemini.image || `/images/default-city.jpg`, 
   };
 
-  // Pass coordinates directly to DynamicCityContent, which then passes to useCityData
+  // Pass the comprehensive data to DynamicCityContent
+  // DynamicCityContent will need to be updated to use this new structure,
+  // especially for displaying attractions, kitchens, and stays.
   return <DynamicCityContent cityPageData={finalCityPageData} />;
 }
 
