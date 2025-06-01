@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { getCachedResponse, setCachedResponse } from '@/lib/amadeusCache';
 
-// Get your API key from environment variables
+// Gemini API anahtarınızı ortam değişkenlerinden alın
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const endpoint = 'gemini';
     const cacheParams = { locationQuery };
 
-    // Check cache first
+    // Önce önbelleği kontrol et
     try {
       const cachedResponse = await getCachedResponse(endpoint, cacheParams);
       if (cachedResponse) {
@@ -30,34 +30,31 @@ export async function POST(request: NextRequest) {
       console.warn('Cache lookup failed for Gemini, proceeding with API call:', cacheError);
     }
 
-    // For text-only input, use the gemini-pro model
+    // gemini-2.0-flash modelini kullanın. Bu model hız için optimize edilmiştir.
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = `Based on the location "${locationQuery}", provide the following information:
-1.  Canonical City Name
-2.  Country
-3.  A concise general description of the city (2-3 sentences).
-4.  Geographical Coordinates (latitude and longitude).
-5.  Top attractions
-6.  Top kitchens (restaurants or local eateries)
-7.  Top stays (hotels, guesthouses, or unique accommodations)
-
-For each attraction, kitchen, and stay, provide:
-    a. Name
-    b. A brief description (1-2 sentences)
-    c. Website (if available, otherwise "N/A")
-    d. Google Maps Link
-
-Format the output as a single JSON object with the following top-level keys:
+    // İstemi sadeleştirilmiş ve daha doğrudan hale getirilmiş hali
+    const prompt = `Provide detailed information for the location "${locationQuery}" as a single JSON object.
+The JSON object must contain the following top-level keys:
 - "cityName": string
 - "country": string
-- "cityDescription": string
+- "cityDescription": string (2-3 sentences, concise general description)
 - "coordinates": object with "latitude": number and "longitude": number
-- "attractions": array of objects (each with "name", "description", "website", "googleMapsLink")
-- "kitchens": array of objects (each with "name", "description", "website", "googleMapsLink")
-- "stays": array of objects (each with "name", "description", "website", "googleMapsLink")
+- "attractions": array of objects
+- "kitchens": array of objects
+- "stays": array of objects
 
-Example for the top-level structure and one attraction:
+For each item within "attractions", "kitchens", and "stays" arrays, each object must have:
+- "name": string
+- "description": string (1-2 sentences, brief description)
+- "website": string (URL or "N/A" if not available)
+- "googleMapsLink": string (URL or "N/A" if not available)
+
+Provide 3-5 relevant suggestions for each category (attractions, kitchens, stays) if possible.
+If information for a category or specific field is not found, use an empty array for categories or "N/A" for fields.
+Ensure geographical coordinates are accurate. If the location query is ambiguous, use the most common interpretation.
+
+Example JSON structure:
 {
   "cityName": "Paris",
   "country": "France",
@@ -71,49 +68,44 @@ Example for the top-level structure and one attraction:
       "name": "Eiffel Tower",
       "description": "Iconic Parisian landmark offering breathtaking city views.",
       "website": "https://www.toureiffel.paris/",
-      "googleMapsLink": "https://maps.app.goo.gl/..."
+      "googleMapsLink": "https://maps.google.com/maps?q=Eiffel+Tower"
     }
   ],
   "kitchens": [],
   "stays": []
 }
-
-Provide at least 3-5 suggestions for each category (attractions, kitchens, stays) if possible. If you cannot find information for a category or a specific field (like website), use an empty array for categories or appropriate placeholders like "N/A" for fields. Ensure coordinates are accurate. If the location query is ambiguous, use the most common interpretation.
-    `;
+`;
 
     const result = await model.generateContent(prompt);
     const response = result.response;
-    const text = response.text();
-    
-    // Clean the text response from Gemini
+    let text = response.text();
+
+    // Gemini yanıtını JSON formatına uygun hale getir
     let cleanedText = text;
     if (cleanedText.startsWith("```json")) {
-      cleanedText = cleanedText.substring(7); // Remove ```json
-
+      cleanedText = cleanedText.substring(7); // "```json" kısmını kaldır
     }
     if (cleanedText.endsWith("```")) {
-      cleanedText = cleanedText.substring(0, cleanedText.length - 3);
+      cleanedText = cleanedText.substring(0, cleanedText.length - 3); // Sondaki "```" kısmını kaldır
     }
-    cleanedText = cleanedText.trim(); // Trim any leading/trailing whitespace
+    cleanedText = cleanedText.trim(); // Baştaki/sondaki boşlukları temizle
 
-    // Attempt to parse the text as JSON. If it fails, return the raw text.
     let data;
     try {
-        data = JSON.parse(cleanedText);
+      data = JSON.parse(cleanedText);
     } catch (error) {
-        console.error("Error parsing Gemini response:", error);
-        // If parsing fails, we'll return the raw text along with an error message.
-        // This helps in debugging the prompt or the model's output format.
-        return NextResponse.json(
-            { 
-                error: "Failed to parse response from Gemini. Raw response included.",
-                geminiRawResponse: text // send back the original text for debugging
-            },
-            { status: 500 }
-        );
+      console.error("Error parsing Gemini response:", error);
+      // JSON ayrıştırma hatası durumunda ham yanıtı hata mesajıyla birlikte döndür
+      return NextResponse.json(
+        {
+          error: "Failed to parse response from Gemini. Raw response included.",
+          geminiRawResponse: text // Hata ayıklama için orijinal metni geri gönder
+        },
+        { status: 500 }
+      );
     }
 
-    // Cache the successful response
+    // Başarılı yanıtı önbelleğe al
     try {
       await setCachedResponse(endpoint, cacheParams, data);
       console.log('Cached new Gemini data for:', locationQuery);
@@ -129,4 +121,4 @@ Provide at least 3-5 suggestions for each category (attractions, kitchens, stays
       { status: 500 }
     );
   }
-} 
+}
