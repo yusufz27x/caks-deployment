@@ -181,7 +181,7 @@ export function CitySearch() {
               }
             }}
             disabled={isNavigating} // Disable input during navigation
-            className="h-14 rounded-full border-2 bg-white/90 pl-12 pr-6 text-lg shadow-lg backdrop-blur-sm transition-all focus:bg-white dark:bg-gray-800/90 dark:text-white dark:placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-14 rounded-full border-2 border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg pl-12 pr-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 focus:bg-white/90 dark:focus:bg-gray-900/90 focus:border-blue-400 dark:focus:border-blue-500 dark:text-white dark:placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed focus:scale-[1.02]"
           />
           <Search className="absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 transform text-gray-400 dark:text-gray-500" />
           <button type="submit" disabled={isNavigating} className="sr-only">
@@ -191,24 +191,40 @@ export function CitySearch() {
       </form>
 
       {showSuggestions && !isNavigating && (
-        <div ref={commandRef} className="absolute mt-1 w-full text-black rounded-md border bg-white shadow-lg dark:bg-gray-800 dark:text-white z-50">
+        <div ref={commandRef} className="absolute mt-2 w-full rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-2xl z-50 overflow-hidden">
           <Command>
             <CommandList>
               {isLoading && (
-                <CommandItem className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Searching cities...
+                <CommandItem className="flex items-center gap-3 p-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/50">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <span className="font-medium">Searching cities...</span>
                 </CommandItem>
               )}
-              {!isLoading && suggestions.length === 0 && inputValue.length >=3 && <CommandEmpty>No cities found for "{inputValue}".</CommandEmpty>}
-              {!isLoading && suggestions.map((city) => (
+              {!isLoading && suggestions.length === 0 && inputValue.length >=3 && (
+                <CommandEmpty className="p-4 text-center text-gray-600 dark:text-gray-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-800">
+                      <Search className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <span>No cities found for "{inputValue}"</span>
+                  </div>
+                </CommandEmpty>
+              )}
+              {!isLoading && suggestions.map((city, index) => (
                 <CommandItem
                   key={city.value + city.label} // Ensure unique key
                   value={city.label} // Value for CMDK filtering/selection
                   onSelect={() => handleSelect(city.value, city.label)}
-                  className="cursor-pointer hover:bg-accent dark:hover:bg-gray-700"
+                  className="cursor-pointer p-4 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30 hover:text-blue-700 dark:hover:text-blue-300 border-b border-gray-200/30 dark:border-gray-700/30 last:border-b-0"
                 >
-                  {city.label}
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50">
+                      <Search className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="font-medium">{city.label}</span>
+                  </div>
                 </CommandItem>
               ))}
             </CommandList>
@@ -227,7 +243,11 @@ export function CitySearch() {
       )}
 
       {/* Display Geoapify Error State */}
-      {geoapifyError && <p className="text-red-500 text-center mt-4">{geoapifyError}</p>}
+      {geoapifyError && (
+        <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 backdrop-blur-sm">
+          <p className="text-red-600 dark:text-red-400 text-center font-medium">{geoapifyError}</p>
+        </div>
+      )}
     </div>
   );
 }
