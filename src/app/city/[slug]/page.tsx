@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { DynamicCityContent } from "./dynamic-city-content"
 import type { Coordinates } from "@/lib/hooks/useCityData" // Import Coordinates type
+import { getCachedResponse, setCachedResponse } from '@/lib/amadeusCache'; // Add caching imports
 
 // Define the structure for individual items (attractions, kitchens, stays)
 interface PlaceItem {
@@ -100,21 +101,48 @@ async function getCityImage(cityName: string): Promise<string | null> {
     // console.warn("Unsplash API key not found. Skipping dynamic image fetch."); // Less verbose
     return null;
   }
+
+  const endpoint = 'unsplash';
+  const cacheParams = { cityName };
+
+  // Check cache first
+  try {
+    const cachedResponse = await getCachedResponse(endpoint, cacheParams);
+    if (cachedResponse) {
+      console.log('Returning cached Unsplash image for:', cityName);
+      return cachedResponse.imageUrl;
+    }
+  } catch (cacheError) {
+    console.warn('Cache lookup failed for Unsplash, proceeding with API call:', cacheError);
+  }
+
   try {
     const response = await fetch(
       `https://api.unsplash.com/search/photos?query=${encodeURIComponent(cityName)}&per_page=1&orientation=landscape&client_id=${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
     );
     if (!response.ok) {
-      // console.error(`Unsplash API error for ${cityName}: ${response.status}`); // Less verbose
+      console.error(`Unsplash API error for ${cityName}: ${response.status}`);
       return null;
     }
     const data = await response.json();
+    
+    let imageUrl = null;
     if (data.results && data.results.length > 0 && data.results[0].urls) {
-      return data.results[0].urls.regular;
+      imageUrl = data.results[0].urls.regular;
+      
+      // Cache the successful response
+      try {
+        const cacheData = { imageUrl };
+        await setCachedResponse(endpoint, cacheParams, cacheData);
+        console.log('Cached new Unsplash image for:', cityName);
+      } catch (cacheError) {
+        console.warn('Failed to cache Unsplash response:', cacheError);
+      }
     }
-    return null;
+    
+    return imageUrl;
   } catch (error) {
-    // console.error(`Failed to fetch image from Unsplash for ${cityName}:`, error); // Less verbose
+    console.error(`Failed to fetch image from Unsplash for ${cityName}:`, error);
     return null;
   }
 }

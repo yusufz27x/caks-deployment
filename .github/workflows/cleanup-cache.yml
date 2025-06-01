@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Cleanup Expired Cache Entries
         run: |
-          echo "🧹 Starting weekly cleanup of expired Amadeus & Gemini cache entries..."
+          echo "🧹 Starting weekly cleanup of expired Amadeus, Gemini & Unsplash cache entries..."
           
           # Call the cleanup API endpoint
           response=$(curl -s -w "%{http_code}" \
