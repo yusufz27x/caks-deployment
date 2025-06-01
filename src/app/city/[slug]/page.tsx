@@ -120,8 +120,8 @@ async function getCityImage(cityName: string): Promise<string | null> {
 }
 
 
-export default async function CityPage({ params }: { params: { slug: string } }) {
-  const { slug } = params; // Destructure slug from params
+export default async function CityPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params; // Await params before destructuring (Next.js 15)
   // Fetch all city data, including attractions, kitchens, stays, from Gemini
   const cityDataFromGemini = await fetchCityDataFromGemini(slug);
 

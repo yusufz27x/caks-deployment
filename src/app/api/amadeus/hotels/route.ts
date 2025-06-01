@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import amadeus from '@/lib/amadeusClient';
+import { getCachedResponse, setCachedResponse } from '@/lib/amadeusCache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +32,29 @@ export async function GET(request: NextRequest) {
       currency: 'USD'
     };
     
+    const endpoint = 'hotels';
+
+    // Check cache first
+    try {
+      const cachedResponse = await getCachedResponse(endpoint, hotelSearchParams);
+      if (cachedResponse) {
+        console.log('Returning cached hotel data');
+        return NextResponse.json(cachedResponse);
+      }
+    } catch (cacheError) {
+      console.warn('Cache lookup failed, proceeding with API call:', cacheError);
+    }
+
+    // If not in cache, make API call
     const response = await amadeus.shopping.hotelOffers.get(hotelSearchParams);
+    
+    // Cache the successful response
+    try {
+      await setCachedResponse(endpoint, hotelSearchParams, response.result);
+      console.log('Cached new hotel data');
+    } catch (cacheError) {
+      console.warn('Failed to cache response:', cacheError);
+    }
     
     return NextResponse.json(response.result);
   } catch (error: any) {

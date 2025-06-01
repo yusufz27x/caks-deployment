@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import amadeus from '@/lib/amadeusClient';
+import { getCachedResponse, setCachedResponse } from '@/lib/amadeusCache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,9 +38,32 @@ export async function GET(request: NextRequest) {
     if (categoryFilter) {
       searchParams.categoryFilter = categoryFilter;
     }
+
+    const endpoint = 'poi';
+
+    // Check cache first
+    try {
+      const cachedResponse = await getCachedResponse(endpoint, searchParams);
+      if (cachedResponse) {
+        console.log('Returning cached POI data');
+        return NextResponse.json(cachedResponse);
+      }
+    } catch (cacheError) {
+      console.warn('Cache lookup failed, proceeding with API call:', cacheError);
+    }
     
     try {
+      // If not in cache, make API call
       const response = await amadeus.referenceData.locations.pointsOfInterest.get(searchParams);
+      
+      // Cache the successful response
+      try {
+        await setCachedResponse(endpoint, searchParams, response.result);
+        console.log('Cached new POI data');
+      } catch (cacheError) {
+        console.warn('Failed to cache response:', cacheError);
+      }
+      
       return NextResponse.json(response.result);
     } catch (apiError: any) {
       // Handle specific API errors

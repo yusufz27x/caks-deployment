@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# custom
+CACHING_SETUP.md
+GITHUB_ACTIONS_SETUP.md
+HOW_TO_SEE_CACHE_LOGS.md
+SUPABASE_CRON_SETUP.md

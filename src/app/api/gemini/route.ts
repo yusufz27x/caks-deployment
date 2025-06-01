@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { getCachedResponse, setCachedResponse } from '@/lib/amadeusCache';
 
 // Get your API key from environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -13,6 +14,20 @@ export async function POST(request: NextRequest) {
         { error: "Missing locationQuery in request body" },
         { status: 400 }
       );
+    }
+
+    const endpoint = 'gemini';
+    const cacheParams = { locationQuery };
+
+    // Check cache first
+    try {
+      const cachedResponse = await getCachedResponse(endpoint, cacheParams);
+      if (cachedResponse) {
+        console.log('Returning cached Gemini data for:', locationQuery);
+        return NextResponse.json(cachedResponse);
+      }
+    } catch (cacheError) {
+      console.warn('Cache lookup failed for Gemini, proceeding with API call:', cacheError);
     }
 
     // For text-only input, use the gemini-pro model
@@ -98,6 +113,13 @@ Provide at least 3-5 suggestions for each category (attractions, kitchens, stays
         );
     }
 
+    // Cache the successful response
+    try {
+      await setCachedResponse(endpoint, cacheParams, data);
+      console.log('Cached new Gemini data for:', locationQuery);
+    } catch (cacheError) {
+      console.warn('Failed to cache Gemini response:', cacheError);
+    }
 
     return NextResponse.json(data);
   } catch (error) {
