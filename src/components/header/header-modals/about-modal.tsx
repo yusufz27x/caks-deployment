@@ -1,10 +1,10 @@
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { AnimatedDialogContent } from "@/components/shared/animated-dialog-content"
 
 interface AboutModalProps {
   open: boolean
@@ -14,7 +14,7 @@ interface AboutModalProps {
 export function AboutModal({ open, onOpenChange }: AboutModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <AnimatedDialogContent open={open}>
         <DialogHeader>
           <DialogTitle className="text-foreground">About Us</DialogTitle>
           <DialogDescription>
@@ -29,7 +29,7 @@ export function AboutModal({ open, onOpenChange }: AboutModalProps) {
             We curate and verify all our recommendations to ensure you get the most accurate and up-to-date information for your travel planning.
           </p>
         </div>
-      </DialogContent>
+      </AnimatedDialogContent>
     </Dialog>
   )
 } 

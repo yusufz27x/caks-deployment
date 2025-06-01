@@ -1,10 +1,10 @@
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { AnimatedDialogContent } from "@/components/shared/animated-dialog-content"
 
 interface LicenseModalProps {
   open: boolean
@@ -14,7 +14,7 @@ interface LicenseModalProps {
 export function LicenseModal({ open, onOpenChange }: LicenseModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <AnimatedDialogContent open={open}>
         <DialogHeader>
           <DialogTitle className="text-foreground">License</DialogTitle>
           <DialogDescription>
@@ -32,7 +32,7 @@ export function LicenseModal({ open, onOpenChange }: LicenseModalProps) {
             All content and data provided through this application are subject to our Terms of Service and Privacy Policy.
           </p>
         </div>
-      </DialogContent>
+      </AnimatedDialogContent>
     </Dialog>
   )
 } 

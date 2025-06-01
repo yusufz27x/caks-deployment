@@ -1,10 +1,10 @@
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { AnimatedDialogContent } from "@/components/shared/animated-dialog-content"
 import { ModeToggle } from "@/components/shared/mode-toggle"
 
 interface SettingsModalProps {
@@ -15,7 +15,7 @@ interface SettingsModalProps {
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <AnimatedDialogContent open={open}>
         <DialogHeader>
           <DialogTitle className="text-foreground">Settings</DialogTitle>
           <DialogDescription>
@@ -34,7 +34,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </select>
           </div>
         </div>
-      </DialogContent>
+      </AnimatedDialogContent>
     </Dialog>
   )
 } 

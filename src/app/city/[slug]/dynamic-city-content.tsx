@@ -14,6 +14,7 @@ import { LicenseModal } from "@/components/header/header-modals/license-modal"
 import { AIAssistantModal } from "@/components/shared/ai-assistant-modal"
 import { useCityData, type Coordinates } from "@/lib/hooks/useCityData"
 import { CitySearch } from "@/components/shared/city-search"
+import { motion, AnimatePresence } from "framer-motion"
 
 // NEW: Tabs configuration
 const tabsConfig = [
@@ -53,6 +54,21 @@ interface DynamicCityContentProps {
   cityPageData: CityPageData;
 }
 
+const tabContentVariants = {
+  enter: (direction: number) => ({
+    opacity: 0,
+    x: direction > 0 ? 10 : -10
+  }),
+  center: {
+    opacity: 1,
+    x: 0
+  },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction > 0 ? -10 : 10
+  })
+}
+
 export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -61,10 +77,23 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
   const { loading, error, attractions, kitchens, stays, cityName: hookCityName, country: hookCountry, cityDescription: hookCityDescription } = useCityData(cityPageData.coordinates, cityPageData.name)
 
   // NEW: State for animated tabs
-  const [currentTabValue, setCurrentTabValue] = useState(tabsConfig[0].value);
-  const tabsRef = useRef<Array<HTMLButtonElement | null>>([]);
-  const [tabUnderlineWidth, setTabUnderlineWidth] = useState(0);
-  const [tabUnderlineLeft, setTabUnderlineLeft] = useState(0);
+  const [currentTabValue, setCurrentTabValue] = useState(tabsConfig[0].value)
+  const [previousTabValue, setPreviousTabValue] = useState(tabsConfig[0].value)
+  const tabsRef = useRef<Array<HTMLButtonElement | null>>([])
+  const [tabUnderlineWidth, setTabUnderlineWidth] = useState(0)
+  const [tabUnderlineLeft, setTabUnderlineLeft] = useState(0)
+
+  // Function to get tab index
+  const getTabIndex = (value: string) => tabsConfig.findIndex(tab => tab.value === value)
+
+  // Handle tab change with direction
+  const handleTabChange = (value: string) => {
+    setPreviousTabValue(currentTabValue)
+    setCurrentTabValue(value)
+  }
+
+  // Calculate animation direction
+  const direction = getTabIndex(currentTabValue) - getTabIndex(previousTabValue)
 
   const displayName = hookCityName || cityPageData.name
   const displayCountry = hookCountry || cityPageData.country
@@ -178,7 +207,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
         <div className="container px-4 mx-auto py-8">
           <Tabs 
             value={currentTabValue} 
-            onValueChange={setCurrentTabValue} 
+            onValueChange={handleTabChange} 
             className="w-full"
           >
             <TabsList className="relative flex w-full h-14 items-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 shadow-xl rounded-2xl mb-8 px-1">
@@ -189,8 +218,8 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
                   style={{
                     left: tabUnderlineLeft,
                     width: tabUnderlineWidth,
-                    top: '0.25rem', // Based on TabsList h-14 (3.5rem) and px-1 (0.25rem) and trigger h-12 (3rem)
-                    height: '3rem', // Explicitly h-12 (3rem)
+                    top: '0.25rem',
+                    height: '3rem',
                   }}
                 >
                   <span 
@@ -203,7 +232,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
                 const IconComponent = tab.icon;
                 return (
                   <TabsTrigger
-                    key={tab.value}
+                    key={`tab-${tab.value}`}
                     ref={(el) => { tabsRef.current[index] = el; }}
                     value={tab.value}
                     className={`relative z-10 flex-1 flex items-center justify-center rounded-xl h-12 text-base font-medium transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 dark:focus-visible:ring-purple-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 ${tab.hoverClasses} ${currentTabValue === tab.value ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}
@@ -225,220 +254,274 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
                 </div>
               </div>
             ) : (
-              <>
+              <AnimatePresence mode="wait">
                 {/* Attractions Tab */}
-                <TabsContent value="attractions" className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-8 shadow-xl">
-                  <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Top Attractions in {displayName}</h2>
-                  {attractions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="p-6 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950/50 dark:to-purple-950/50 mx-auto w-fit mb-4">
-                        <MapPin className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                <TabsContent 
+                  key="attractions-tab"
+                  value="attractions" 
+                  className="relative"
+                >
+                  <motion.div
+                    key={`attractions-content-${currentTabValue}`}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    custom={direction}
+                    variants={tabContentVariants}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-8 shadow-xl"
+                  >
+                    <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Top Attractions in {displayName}</h2>
+                    {attractions.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="p-6 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950/50 dark:to-purple-950/50 mx-auto w-fit mb-4">
+                          <MapPin className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 text-lg">No attraction data available.</p>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-lg">No attraction data available.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {attractions.map((item) => (
-                        <Card key={item.id} className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50/80 via-white to-purple-50/80 dark:from-blue-950/20 dark:via-gray-900 dark:to-purple-950/20 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
-                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                          
-                          <CardHeader className="relative z-10">
-                            <div className="flex items-start justify-between mb-3">
-                              <Badge variant="secondary" className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800 backdrop-blur-sm">
-                                <MapPin className="h-3 w-3 mr-1" />
-                                Attraction
-                              </Badge>
-                              <div className="p-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                                <MapPin className="h-6 w-6" />
-                              </div>
-                            </div>
-                            <CardTitle className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
-                              {item.name}
-                            </CardTitle>
-                          </CardHeader>
-                          
-                          <CardContent className="space-y-4 relative z-10">
-                            {item.description && (
-                              <CardDescription className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                                {item.description}
-                              </CardDescription>
-                            )}
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {attractions.map((item) => (
+                          <Card 
+                            key={`attraction-${item.id || item.name.replace(/\s+/g, '-')}`} 
+                            className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50/80 via-white to-purple-50/80 dark:from-blue-950/20 dark:via-gray-900 dark:to-purple-950/20 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             
-                            <div className="flex flex-wrap gap-2">
-                              {item.googleMapsLink && item.googleMapsLink !== "N/A" && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  asChild 
-                                  className="relative z-20 flex-1 min-w-0 border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-800 dark:hover:border-blue-600 dark:hover:bg-blue-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
-                                >
-                                  <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
-                                    <MapPin className="h-4 w-4 mr-1" /> View Map
-                                  </Link>
-                                </Button>
+                            <CardHeader className="relative z-10">
+                              <div className="flex items-start justify-between mb-3">
+                                <Badge variant="secondary" className="bg-blue-100/80 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800 backdrop-blur-sm">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  Attraction
+                                </Badge>
+                                <div className="p-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                  <MapPin className="h-6 w-6" />
+                                </div>
+                              </div>
+                              <CardTitle className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                                {item.name}
+                              </CardTitle>
+                            </CardHeader>
+                            
+                            <CardContent className="space-y-4 relative z-10">
+                              {item.description && (
+                                <CardDescription className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                                  {item.description}
+                                </CardDescription>
                               )}
-                              {item.website && item.website !== "N/A" && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  asChild 
-                                  className="relative z-20 flex-1 min-w-0 border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:border-purple-800 dark:hover:border-purple-600 dark:hover:bg-purple-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
-                                >
-                                  <Link href={item.website.startsWith('http') ? item.website : `http://${item.website}`} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4 mr-1" /> Website
-                                  </Link>
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                              
+                              <div className="flex flex-wrap gap-2">
+                                {item.googleMapsLink && item.googleMapsLink !== "N/A" && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    asChild 
+                                    className="relative z-20 flex-1 min-w-0 border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-800 dark:hover:border-blue-600 dark:hover:bg-blue-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
+                                  >
+                                    <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
+                                      <MapPin className="h-4 w-4 mr-1" /> View Map
+                                    </Link>
+                                  </Button>
+                                )}
+                                {item.website && item.website !== "N/A" && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    asChild 
+                                    className="relative z-20 flex-1 min-w-0 border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:border-purple-800 dark:hover:border-purple-600 dark:hover:bg-purple-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
+                                  >
+                                    <Link href={item.website.startsWith('http') ? item.website : `http://${item.website}`} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-4 w-4 mr-1" /> Website
+                                    </Link>
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 </TabsContent>
 
                 {/* Food Tab */}
-                <TabsContent value="food" className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-8 shadow-xl">
-                  <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Where to Eat in {displayName}</h2>
-                  {kitchens.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="p-6 rounded-full bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-950/50 dark:to-red-950/50 mx-auto w-fit mb-4">
-                        <Utensils className="h-12 w-12 text-orange-600 dark:text-orange-400" />
+                <TabsContent 
+                  key="food-tab"
+                  value="food" 
+                  className="relative"
+                >
+                  <motion.div
+                    key={`food-content-${currentTabValue}`}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    custom={direction}
+                    variants={tabContentVariants}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-8 shadow-xl"
+                  >
+                    <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Where to Eat in {displayName}</h2>
+                    {kitchens.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="p-6 rounded-full bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-950/50 dark:to-red-950/50 mx-auto w-fit mb-4">
+                          <Utensils className="h-12 w-12 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 text-lg">No restaurant data available.</p>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-lg">No restaurant data available.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {kitchens.map((item) => (
-                        <Card key={item.id} className="group relative overflow-hidden border-0 bg-gradient-to-br from-orange-50/80 via-white to-red-50/80 dark:from-orange-950/20 dark:via-gray-900 dark:to-red-950/20 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
-                          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                          
-                          <CardHeader className="relative z-10">
-                            <div className="flex items-start justify-between mb-3">
-                              <Badge variant="secondary" className="bg-orange-100/80 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800 backdrop-blur-sm">
-                                <Utensils className="h-3 w-3 mr-1" />
-                                Restaurant
-                              </Badge>
-                              <div className="p-3 rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                                <Utensils className="h-6 w-6" />
-                              </div>
-                            </div>
-                            <CardTitle className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-300">
-                              {item.name}
-                            </CardTitle>
-                          </CardHeader>
-                          
-                          <CardContent className="space-y-4 relative z-10">
-                            {item.description && (
-                              <CardDescription className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                                {item.description}
-                              </CardDescription>
-                            )}
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {kitchens.map((item) => (
+                          <Card 
+                            key={`kitchen-${item.id || item.name.replace(/\s+/g, '-')}`}
+                            className="group relative overflow-hidden border-0 bg-gradient-to-br from-orange-50/80 via-white to-red-50/80 dark:from-orange-950/20 dark:via-gray-900 dark:to-red-950/20 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             
-                            <div className="flex flex-wrap gap-2">
-                              {item.googleMapsLink && item.googleMapsLink !== "N/A" && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  asChild 
-                                  className="relative z-20 flex-1 min-w-0 border-orange-200 hover:border-orange-400 hover:bg-orange-50 dark:border-orange-800 dark:hover:border-orange-600 dark:hover:bg-orange-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
-                                >
-                                  <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
-                                    <MapPin className="h-4 w-4 mr-1" /> View Map
-                                  </Link>
-                                </Button>
+                            <CardHeader className="relative z-10">
+                              <div className="flex items-start justify-between mb-3">
+                                <Badge variant="secondary" className="bg-orange-100/80 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800 backdrop-blur-sm">
+                                  <Utensils className="h-3 w-3 mr-1" />
+                                  Restaurant
+                                </Badge>
+                                <div className="p-3 rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                  <Utensils className="h-6 w-6" />
+                                </div>
+                              </div>
+                              <CardTitle className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-300">
+                                {item.name}
+                              </CardTitle>
+                            </CardHeader>
+                            
+                            <CardContent className="space-y-4 relative z-10">
+                              {item.description && (
+                                <CardDescription className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                                  {item.description}
+                                </CardDescription>
                               )}
-                              {item.website && item.website !== "N/A" && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  asChild 
-                                  className="relative z-20 flex-1 min-w-0 border-red-200 hover:border-red-400 hover:bg-red-50 dark:border-red-800 dark:hover:border-red-600 dark:hover:bg-red-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
-                                >
-                                  <Link href={item.website.startsWith('http') ? item.website : `http://${item.website}`} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4 mr-1" /> Website
-                                  </Link>
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                              
+                              <div className="flex flex-wrap gap-2">
+                                {item.googleMapsLink && item.googleMapsLink !== "N/A" && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    asChild 
+                                    className="relative z-20 flex-1 min-w-0 border-orange-200 hover:border-orange-400 hover:bg-orange-50 dark:border-orange-800 dark:hover:border-orange-600 dark:hover:bg-orange-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
+                                  >
+                                    <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
+                                      <MapPin className="h-4 w-4 mr-1" /> View Map
+                                    </Link>
+                                  </Button>
+                                )}
+                                {item.website && item.website !== "N/A" && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    asChild 
+                                    className="relative z-20 flex-1 min-w-0 border-red-200 hover:border-red-400 hover:bg-red-50 dark:border-red-800 dark:hover:border-red-600 dark:hover:bg-red-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
+                                  >
+                                    <Link href={item.website.startsWith('http') ? item.website : `http://${item.website}`} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-4 w-4 mr-1" /> Website
+                                    </Link>
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 </TabsContent>
 
                 {/* Accommodations Tab */}
-                <TabsContent value="accommodations" className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-8 shadow-xl">
-                  <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Places to Stay in {displayName}</h2>
-                  {stays.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="p-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-950/50 dark:to-emerald-950/50 mx-auto w-fit mb-4">
-                        <Hotel className="h-12 w-12 text-green-600 dark:text-green-400" />
+                <TabsContent 
+                  key="accommodations-tab"
+                  value="accommodations" 
+                  className="relative"
+                >
+                  <motion.div
+                    key={`accommodations-content-${currentTabValue}`}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    custom={direction}
+                    variants={tabContentVariants}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-8 shadow-xl"
+                  >
+                    <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Places to Stay in {displayName}</h2>
+                    {stays.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="p-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-950/50 dark:to-emerald-950/50 mx-auto w-fit mb-4">
+                          <Hotel className="h-12 w-12 text-green-600 dark:text-green-400" />
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 text-lg">No accommodation data available.</p>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-lg">No accommodation data available.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {stays.map((item) => (
-                        <Card key={item.id} className="group relative overflow-hidden border-0 bg-gradient-to-br from-green-50/80 via-white to-emerald-50/80 dark:from-green-950/20 dark:via-gray-900 dark:to-emerald-950/20 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
-                          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                          
-                          <CardHeader className="relative z-10">
-                            <div className="flex items-start justify-between mb-3">
-                              <Badge variant="secondary" className="bg-green-100/80 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 backdrop-blur-sm">
-                                <Hotel className="h-3 w-3 mr-1" />
-                                Accommodation
-                              </Badge>
-                              <div className="p-3 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                                <Hotel className="h-6 w-6" />
-                              </div>
-                            </div>
-                            <CardTitle className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300">
-                              {item.name}
-                            </CardTitle>
-                          </CardHeader>
-                          
-                          <CardContent className="space-y-4 relative z-10">
-                            {item.description && (
-                              <CardDescription className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                                {item.description}
-                              </CardDescription>
-                            )}
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {stays.map((item) => (
+                          <Card 
+                            key={`stay-${item.id || item.name.replace(/\s+/g, '-')}`}
+                            className="group relative overflow-hidden border-0 bg-gradient-to-br from-green-50/80 via-white to-emerald-50/80 dark:from-green-950/20 dark:via-gray-900 dark:to-emerald-950/20 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             
-                            <div className="flex flex-wrap gap-2">
-                              {item.googleMapsLink && item.googleMapsLink !== "N/A" && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  asChild 
-                                  className="relative z-20 flex-1 min-w-0 border-green-200 hover:border-green-400 hover:bg-green-50 dark:border-green-800 dark:hover:border-green-600 dark:hover:bg-green-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
-                                >
-                                  <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
-                                    <MapPin className="h-4 w-4 mr-1" /> View Map
-                                  </Link>
-                                </Button>
+                            <CardHeader className="relative z-10">
+                              <div className="flex items-start justify-between mb-3">
+                                <Badge variant="secondary" className="bg-green-100/80 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 backdrop-blur-sm">
+                                  <Hotel className="h-3 w-3 mr-1" />
+                                  Accommodation
+                                </Badge>
+                                <div className="p-3 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                  <Hotel className="h-6 w-6" />
+                                </div>
+                              </div>
+                              <CardTitle className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300">
+                                {item.name}
+                              </CardTitle>
+                            </CardHeader>
+                            
+                            <CardContent className="space-y-4 relative z-10">
+                              {item.description && (
+                                <CardDescription className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                                  {item.description}
+                                </CardDescription>
                               )}
-                              {item.website && item.website !== "N/A" && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  asChild 
-                                  className="relative z-20 flex-1 min-w-0 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
-                                >
-                                  <Link href={item.website.startsWith('http') ? item.website : `http://${item.website}`} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4 mr-1" /> Website
-                                  </Link>
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                              
+                              <div className="flex flex-wrap gap-2">
+                                {item.googleMapsLink && item.googleMapsLink !== "N/A" && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    asChild 
+                                    className="relative z-20 flex-1 min-w-0 border-green-200 hover:border-green-400 hover:bg-green-50 dark:border-green-800 dark:hover:border-green-600 dark:hover:bg-green-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
+                                  >
+                                    <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
+                                      <MapPin className="h-4 w-4 mr-1" /> View Map
+                                    </Link>
+                                  </Button>
+                                )}
+                                {item.website && item.website !== "N/A" && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    asChild 
+                                    className="relative z-20 flex-1 min-w-0 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30 transition-all duration-200 font-medium backdrop-blur-sm"
+                                  >
+                                    <Link href={item.website.startsWith('http') ? item.website : `http://${item.website}`} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-4 w-4 mr-1" /> Website
+                                    </Link>
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 </TabsContent>
-              </>
+              </AnimatePresence>
             )}
           </Tabs>
         </div>
@@ -453,10 +536,13 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
       {/* Floating AI Assistant Button */}
       <Button
         onClick={() => setIsAIAssistantOpen(true)}
-        className="fixed bottom-8 right-8 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 p-0 text-white shadow-xl hover:from-purple-700 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 transition-all duration-300 ease-in-out transform hover:scale-110"
+        className="group fixed bottom-8 right-8 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 p-0 text-white shadow-xl hover:from-purple-700 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 transition-all duration-300 ease-in-out transform hover:scale-110 flex items-center justify-center overflow-hidden hover:w-auto hover:px-6"
         aria-label="Open AI Assistant"
       >
-        <Bot className="h-8 w-8" />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-300 ease-in-out group-hover:max-w-xs">
+          ASK AI
+        </span>
+        <Bot className="h-8 w-8 transition-all duration-300 ease-in-out mr-2" />
       </Button>
     </main>
   )

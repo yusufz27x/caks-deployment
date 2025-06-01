@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog } from "@/components/ui/dialog"
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Bot, Send, MessageSquare, Loader2 } from "lucide-react"
+import { AnimatedDialogContent } from "@/components/shared/animated-dialog-content"
 
 interface AIAssistantModalProps {
   open: boolean
@@ -52,7 +54,7 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50">
+      <AnimatedDialogContent open={open} className="max-w-2xl max-h-[80vh] flex flex-col h-full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-2xl">
             <div className="p-3 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 text-white">
@@ -125,7 +127,7 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
             </Button>
           </div>
         </div>
-      </DialogContent>
+      </AnimatedDialogContent>
     </Dialog>
   )
 } 
