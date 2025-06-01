@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search } from "lucide-react"
+import { Search, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
@@ -19,8 +19,8 @@ export function CitySearch() {
   const [showSuggestions, setShowSuggestions] = React.useState(false)
   const [suggestions, setSuggestions] = React.useState<CitySuggestion[]>([])
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isNavigating, setIsNavigating] = React.useState(false); // New state for navigation loading
   const [geoapifyError, setGeoapifyError] = React.useState<string | null>(null); // For Geoapify API errors
-
 
   const inputRef = React.useRef<HTMLInputElement>(null)
   const commandRef = React.useRef<HTMLDivElement>(null)
@@ -142,16 +142,24 @@ export function CitySearch() {
     };
   }, []);
 
-  const handleSelect = (selectedValue: string, selectedLabel: string) => {
+  const handleSelect = async (selectedValue: string, selectedLabel: string) => {
     setInputValue(selectedLabel); 
     setShowSuggestions(false);
-    router.push(`/city/${selectedValue}`); 
+    setIsNavigating(true); // Start navigation loading
+    
+    try {
+      await router.push(`/city/${selectedValue}`); 
+    } catch (error) {
+      console.error("Navigation error:", error);
+      setIsNavigating(false); // Reset loading state on error
+    }
+    // Note: setIsNavigating(false) will be called when component unmounts or new page loads
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); 
     if (suggestions.length > 0) {
-      handleSelect(suggestions[0].value, suggestions[0].label);
+      await handleSelect(suggestions[0].value, suggestions[0].label);
     }
     // If no suggestions, pressing enter does nothing beyond preventing default
   };
@@ -172,20 +180,26 @@ export function CitySearch() {
                 setShowSuggestions(true);
               }
             }}
-            className="h-14 rounded-full border-2 bg-white/90 pl-12 pr-6 text-lg shadow-lg backdrop-blur-sm transition-all focus:bg-white dark:bg-gray-800/90 dark:text-white dark:placeholder-gray-400"
+            disabled={isNavigating} // Disable input during navigation
+            className="h-14 rounded-full border-2 bg-white/90 pl-12 pr-6 text-lg shadow-lg backdrop-blur-sm transition-all focus:bg-white dark:bg-gray-800/90 dark:text-white dark:placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <Search className="absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 transform text-gray-400 dark:text-gray-500" />
-          <button type="submit" className="sr-only">
+          <button type="submit" disabled={isNavigating} className="sr-only">
             Search
           </button>
         </div>
       </form>
 
-      {showSuggestions && (
+      {showSuggestions && !isNavigating && (
         <div ref={commandRef} className="absolute mt-1 w-full text-black rounded-md border bg-white shadow-lg dark:bg-gray-800 dark:text-white z-50">
           <Command>
             <CommandList>
-              {isLoading && <CommandItem className="text-sm text-muted-foreground">Loading...</CommandItem>}
+              {isLoading && (
+                <CommandItem className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Searching cities...
+                </CommandItem>
+              )}
               {!isLoading && suggestions.length === 0 && inputValue.length >=3 && <CommandEmpty>No cities found for "{inputValue}".</CommandEmpty>}
               {!isLoading && suggestions.map((city) => (
                 <CommandItem
@@ -199,6 +213,16 @@ export function CitySearch() {
               ))}
             </CommandList>
           </Command>
+        </div>
+      )}
+
+      {/* Loading overlay for navigation */}
+      {isNavigating && (
+        <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-full flex items-center justify-center z-40">
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm font-medium">Loading city...</span>
+          </div>
         </div>
       )}
 
