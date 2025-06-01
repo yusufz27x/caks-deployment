@@ -31,9 +31,12 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLicenseOpen, setIsLicenseOpen] = useState(false)
-  const { loading, error, attractions, restaurants, hotels, activities } = useCityData(cityPageData.coordinates)
+  const { loading, error, attractions, kitchens, stays, cityName: hookCityName, country: hookCountry, cityDescription: hookCityDescription } = useCityData(cityPageData.coordinates, cityPageData.name)
 
-  const { name: cityName, country, description, image } = cityPageData
+  const displayName = hookCityName || cityPageData.name
+  const displayCountry = hookCountry || cityPageData.country
+  const displayDescription = hookCityDescription || cityPageData.description
+  const { image } = cityPageData
 
   if (loading && !cityPageData.coordinates) {
     return (
@@ -60,7 +63,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
         <div className="absolute inset-0 top-0">
           <Image
             src={image || "/placeholder.svg"}
-            alt={cityName}
+            alt={displayName}
             fill
             className="object-cover brightness-75"
             priority
@@ -68,15 +71,15 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
           <div className="absolute inset-0 bg-black/0 dark:bg-black/40 transition-colors duration-300" />
         </div>
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
-          <h1 className="mb-2 text-4xl font-bold text-white md:text-5xl">{cityName}</h1>
-          <p className="text-xl text-white">{country}</p>
+          <h1 className="mb-2 text-4xl font-bold text-white md:text-5xl">{displayName}</h1>
+          <p className="text-xl text-white">{displayCountry}</p>
         </div>
       </section>
 
       {/* City Description */}
       <section className="py-8 bg-muted/30">
         <div className="container mx-auto px-4">
-          <p className="text-lg text-center max-w-3xl mx-auto text-black/90 dark:text-white/90">{description}</p>
+          <p className="text-lg text-center max-w-3xl mx-auto text-black/90 dark:text-white/90">{displayDescription}</p>
         </div>
       </section>
 
@@ -105,7 +108,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <Tabs defaultValue="attractions" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 gap-4 p-4">
+            <TabsList className="grid w-full grid-cols-3 gap-4 p-4">
               <TabsTrigger value="attractions" className="flex items-center justify-center border-gray-200 dark:border-gray-800 rounded-md h-12 text-base">
                 <MapPin className="h-5 w-5 mr-2" />
                 <span>Attractions</span>
@@ -118,10 +121,6 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
                 <Hotel className="h-5 w-5 mr-2" />
                 <span>Stay</span>
               </TabsTrigger>
-              <TabsTrigger value="activities" className="flex items-center justify-center border-gray-200 dark:border-gray-800 rounded-md h-12 text-base">
-                <Activity className="h-5 w-5 mr-2" />
-                <span>Activities</span>
-              </TabsTrigger>
             </TabsList>
 
             {loading ? (
@@ -133,7 +132,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
               <>
                 {/* Attractions Tab */}
                 <TabsContent value="attractions" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
-                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Top Attractions in {cityName}</h2>
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Top Attractions in {displayName}</h2>
                   {attractions.length === 0 ? (
                     <p className="text-black/90 dark:text-white/90">No attraction data available.</p>
                   ) : (
@@ -145,21 +144,12 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
                           </div>
                           <CardContent className="p-4">
                             <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{item.name}</h3>
-                            {item.formattedAddress && (
-                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.formattedAddress}</p>
+                            {item.description && (
+                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.description}</p>
                             )}
-                            {item.tags && item.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2 mb-2">
-                                {item.tags.slice(0, 3).map((tag: string, index: number) => (
-                                  <Badge key={index} variant="outline" className="text-xs capitalize text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag.replace(/_/g, ' ')}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            {(item.geoCode?.latitude && item.geoCode?.longitude) && (
+                            {item.googleMapsLink && (
                                 <Button variant="outline" size="sm" asChild className="mt-2 mr-2">
-                                  <Link href={`https://www.google.com/maps/search/?api=1&query=${item.geoCode.latitude},${item.geoCode.longitude}`} target="_blank" rel="noopener noreferrer">
+                                  <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
                                     <MapPin className="h-4 w-4 mr-1" /> View Map
                                   </Link>
                                 </Button>
@@ -180,33 +170,24 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
 
                 {/* Food Tab */}
                 <TabsContent value="food" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
-                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Where to Eat in {cityName}</h2>
-                  {restaurants.length === 0 ? (
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Where to Eat in {displayName}</h2>
+                  {kitchens.length === 0 ? (
                     <p className="text-black/90 dark:text-white/90">No restaurant data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {restaurants.map((item) => (
+                      {kitchens.map((item) => (
                         <Card key={item.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
                            <div className="relative h-48 w-full bg-muted flex items-center justify-center">
                             <Utensils className="h-12 w-12 text-muted-foreground" />
                           </div>
                           <CardContent className="p-4">
                             <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{item.name}</h3>
-                            {item.formattedAddress && (
-                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.formattedAddress}</p>
+                            {item.description && (
+                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.description}</p>
                             )}
-                            {item.tags && item.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2 mb-2">
-                                {item.tags.slice(0, 3).map((tag: string, index: number) => (
-                                  <Badge key={index} variant="outline" className="text-xs capitalize text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag.replace(/_/g, ' ')}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                             {(item.geoCode?.latitude && item.geoCode?.longitude) && (
+                            {item.googleMapsLink && (
                                 <Button variant="outline" size="sm" asChild className="mt-2 mr-2">
-                                  <Link href={`https://www.google.com/maps/search/?api=1&query=${item.geoCode.latitude},${item.geoCode.longitude}`} target="_blank" rel="noopener noreferrer">
+                                  <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
                                     <MapPin className="h-4 w-4 mr-1" /> View Map
                                   </Link>
                                 </Button>
@@ -227,80 +208,24 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
 
                 {/* Accommodations Tab */}
                 <TabsContent value="accommodations" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
-                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Places to Stay in {cityName}</h2>
-                  {hotels.length === 0 ? (
+                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Places to Stay in {displayName}</h2>
+                  {stays.length === 0 ? (
                     <p className="text-black/90 dark:text-white/90">No accommodation data available.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {hotels.map((item) => (
+                      {stays.map((item) => (
                         <Card key={item.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
                           <div className="relative h-48 w-full bg-muted flex items-center justify-center">
                             <Hotel className="h-12 w-12 text-muted-foreground" />
                           </div>
                           <CardContent className="p-4">
                             <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{item.name}</h3>
-                            {item.formattedAddress && (
-                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.formattedAddress}</p>
+                            {item.description && (
+                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.description}</p>
                             )}
-                            {item.tags && item.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2 mb-2">
-                                {item.tags.slice(0, 3).map((tag: string, index: number) => (
-                                  <Badge key={index} variant="outline" className="text-xs capitalize text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag.replace(/_/g, ' ')}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            {(item.geoCode?.latitude && item.geoCode?.longitude) && (
+                            {item.googleMapsLink && (
                                 <Button variant="outline" size="sm" asChild className="mt-2 mr-2">
-                                  <Link href={`https://www.google.com/maps/search/?api=1&query=${item.geoCode.latitude},${item.geoCode.longitude}`} target="_blank" rel="noopener noreferrer">
-                                    <MapPin className="h-4 w-4 mr-1" /> View Map
-                                  </Link>
-                                </Button>
-                            )}
-                            {item.website && (
-                                <Button variant="outline" size="sm" asChild className="mt-2">
-                                  <Link href={item.website.startsWith('http') ? item.website : `http://${item.website}`} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4 mr-1" /> Website
-                                  </Link>
-                                </Button>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Activities Tab - now populated by Geoapify */}
-                <TabsContent value="activities" className="mt-6 border border-gray-100 dark:border-gray-800 rounded-md p-4">
-                  <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Things to Do in {cityName}</h2>
-                  {activities.length === 0 ? (
-                    <p className="text-black/90 dark:text-white/90">No activity data available.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {activities.map((item) => (
-                        <Card key={item.id} className="overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/90">
-                          <div className="relative h-48 w-full bg-muted flex items-center justify-center">
-                            <Activity className="h-12 w-12 text-muted-foreground" />
-                          </div>
-                          <CardContent className="p-4">
-                            <h3 className="text-xl font-semibold mb-2 text-black dark:text-white">{item.name}</h3>
-                            {item.formattedAddress && (
-                              <p className="text-sm text-black/70 dark:text-white/70 mb-2">{item.formattedAddress}</p>
-                            )}
-                            {item.tags && item.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2 mb-2">
-                                {item.tags.slice(0, 3).map((tag: string, index: number) => (
-                                  <Badge key={index} variant="outline" className="text-xs capitalize text-black/70 dark:text-white/70 border-gray-300 dark:border-gray-600">
-                                    {tag.replace(/_/g, ' ')}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            {(item.geoCode?.latitude && item.geoCode?.longitude) && (
-                                <Button variant="outline" size="sm" asChild className="mt-2 mr-2">
-                                  <Link href={`https://www.google.com/maps/search/?api=1&query=${item.geoCode.latitude},${item.geoCode.longitude}`} target="_blank" rel="noopener noreferrer">
+                                  <Link href={item.googleMapsLink} target="_blank" rel="noopener noreferrer">
                                     <MapPin className="h-4 w-4 mr-1" /> View Map
                                   </Link>
                                 </Button>
@@ -329,7 +254,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">Need Personalized Recommendations?</h2>
           <p className="mb-6 max-w-2xl mx-auto text-black/90 dark:text-white/90">
-            Our AI assistant can help you plan the perfect trip to {cityName} based on your preferences.
+            Our AI assistant can help you plan the perfect trip to {displayName} based on your preferences.
           </p>
           <Button asChild size="lg">
             <Link href="/ai-assistant">

@@ -5,30 +5,27 @@ import { Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
+
 // import { supabase } from "@/lib/supabaseClient"
 
 interface CitySuggestion {
-  value: string; // This will be the slug for navigation e.g. "paris-fr"
-  label: string; // This will be for display e.g. "Paris, France"
-  // Add original API data if needed for more complex selection logic later
-  originalData?: any; 
+  value: string; 
+  label: string; 
+  originalData?: any;
 }
-
-// Removed mockCities
 
 export function CitySearch() {
   const [inputValue, setInputValue] = React.useState("")
   const [showSuggestions, setShowSuggestions] = React.useState(false)
-  const [suggestions, setSuggestions] = React.useState<CitySuggestion[]>([]) // Renamed from filteredCities
-  const [isLoading, setIsLoading] = React.useState(false); // To show loading state
-  
+  const [suggestions, setSuggestions] = React.useState<CitySuggestion[]>([])
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [geoapifyError, setGeoapifyError] = React.useState<string | null>(null); // For Geoapify API errors
+
+
   const inputRef = React.useRef<HTMLInputElement>(null)
   const commandRef = React.useRef<HTMLDivElement>(null)
   const router = useRouter()
 
-  // Removed the useEffect that was setting cities from mockCities
-
-  // Fetch suggestions from Geoapify Autocomplete API based on input
   React.useEffect(() => {
     if (inputValue.length < 3) {
       setShowSuggestions(false);
@@ -38,7 +35,7 @@ export function CitySearch() {
 
     setIsLoading(true);
     const timer = setTimeout(async () => {
-      if (inputValue.length < 3) { // Double check, in case input changed rapidly
+      if (inputValue.length < 3) { 
         setIsLoading(false);
         setShowSuggestions(false);
         setSuggestions([]);
@@ -47,45 +44,62 @@ export function CitySearch() {
       try {
         const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
         if (!apiKey) {
-          console.error("Geoapify API key not found for city search.");
-          setIsLoading(false);
-          setSuggestions([]); // Potentially show an error message to user
-          return;
-        }
-        const response = await fetch(
-          `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(inputValue)}&type=city&format=json&limit=5&apiKey=${apiKey}`
-        );
-        if (!response.ok) {
-          console.error("Geoapify Autocomplete API error:", response.status, response.statusText);
+          const errorMsg = "Geoapify API key not found. Please configure it in your environment variables.";
+          console.error(errorMsg + " (city search)");
+          setGeoapifyError(errorMsg);
           setIsLoading(false);
           setSuggestions([]);
+          setShowSuggestions(false);
+          return;
+        } else {
+          setGeoapifyError(null); // Clear previous error
+        }
+        const response = await fetch(
+          `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(inputValue)}&format=json&limit=5&apiKey=${apiKey}`
+        );
+        if (!response.ok) {
+          const errorMsg = `Geoapify API error: ${response.status} ${response.statusText}. Check console for details.`;
+          console.error("Geoapify Autocomplete API error:", response.status, response.statusText);
+          try {
+            const errorBodyText = await response.text();
+            console.error("Geoapify error response body:", errorBodyText);
+          } catch (e) {
+            console.error("Failed to read Geoapify error response body:", e);
+          }
+          setGeoapifyError(errorMsg);
+          setIsLoading(false);
+          setSuggestions([]);
+          setShowSuggestions(false);
           return;
         }
         const data = await response.json();
+        if (!data || !data.results || data.results.length === 0) {
+          console.log(
+            `Geoapify API returned no results for input: "${inputValue}". Received data:`,
+            JSON.stringify(data, null, 2)
+          );
+        }
         const formattedSuggestions: CitySuggestion[] = (data.results || []).map((item: any) => {
-          const props = item.properties;
-          
-          // Robust name part for slug generation
-          let nameForSlug = props.name || props.city || props.street || 'location';
+          console.log("item", item);
+          let nameForSlug = item.name || item.city || item.street || 'location';
           nameForSlug = nameForSlug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-          const countryPart = props.country_code ? props.country_code.toLowerCase() : '';
+          const countryPart = item.country_code ? item.country_code.toLowerCase() : '';
           let slug = nameForSlug;
-          if (countryPart && nameForSlug !== 'location') { // Avoid slugs like 'location-us' if name is unknown
+          if (countryPart && nameForSlug !== 'location') { 
             slug = `${nameForSlug}-${countryPart}`;
           } else if (nameForSlug === 'location' && countryPart) {
-            slug = `${countryPart}-city`; // Fallback slug if only country is known
+            slug = `${countryPart}-city`; 
           } else if (nameForSlug === 'location') {
-            slug = `unknown-location-${Math.random().toString(36).substring(2, 7)}`; // Highly generic fallback
+            slug = `unknown-location-${Math.random().toString(36).substring(2, 7)}`;
           }
 
-          // Robust label generation
-          let displayLabel = props.formatted;
+          let displayLabel = item.formatted;
           if (!displayLabel) {
-            const namePartDisplay = props.name || props.street;
-            const cityPartDisplay = props.city;
-            const statePartDisplay = props.state;
-            const countryPartDisplay = props.country;
+            const namePartDisplay = item.name || item.street;
+            const cityPartDisplay = item.city;
+            const statePartDisplay = item.state;
+            const countryPartDisplay = item.country;
             let parts = [namePartDisplay, cityPartDisplay, statePartDisplay, countryPartDisplay].filter(Boolean);
             displayLabel = parts.join(', ');
             if (!displayLabel) displayLabel = 'Unknown Location';
@@ -94,22 +108,24 @@ export function CitySearch() {
           return {
             value: slug, 
             label: displayLabel,
-            originalData: props, 
+            originalData: item,
           };
         });
         setSuggestions(formattedSuggestions);
         setShowSuggestions(true);
-      } catch (error) {
+      } catch (error: any) {
+        const errorMsg = `Error fetching city suggestions: ${error.message || "Unknown error"}. Check console.`;
         console.error("Error fetching city suggestions:", error);
+        setGeoapifyError(errorMsg);
         setSuggestions([]);
+        setShowSuggestions(false); // Hide suggestions on error
       }
       setIsLoading(false);
-    }, 500); // Debounce API calls
+    }, 500); 
 
     return () => clearTimeout(timer);
   }, [inputValue]);
 
-  // Handle click outside to close suggestions
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -127,24 +143,19 @@ export function CitySearch() {
   }, []);
 
   const handleSelect = (selectedValue: string, selectedLabel: string) => {
-    setInputValue(selectedLabel); // Update input to show full selected label
+    setInputValue(selectedLabel); 
     setShowSuggestions(false);
-    // Navigate to the city page using the generated slug (selectedValue)
-    router.push(`/city/${selectedValue}`);
+    router.push(`/city/${selectedValue}`); 
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); 
     if (suggestions.length > 0) {
-      // If suggestions are available, navigate to the first one
       handleSelect(suggestions[0].value, suggestions[0].label);
-    } else if (inputValue.length >= 3) {
-      // Fallback: if no suggestions but input is valid, try to navigate using the input directly as a slug
-      // This relies on the page.tsx to correctly geocode this raw slug
-      router.push(`/city/${inputValue.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`); 
     }
+    // If no suggestions, pressing enter does nothing beyond preventing default
   };
-
+  
   return (
     <div className="relative w-full">
       <form onSubmit={handleSubmit}>
@@ -190,6 +201,9 @@ export function CitySearch() {
           </Command>
         </div>
       )}
+
+      {/* Display Geoapify Error State */}
+      {geoapifyError && <p className="text-red-500 text-center mt-4">{geoapifyError}</p>}
     </div>
   );
 }
