@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cleanExpiredCache, clearAllCache } from '@/lib/amadeusCache';
+import { cleanExpiredCache, clearAllCache } from '@/lib/cityCache';
 import { supabase } from '@/lib/supabaseClient';
 
 export async function GET(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (action === 'stats') {
       // Get cache statistics
       const { data, error } = await supabase
-        .from('amadeus_cache')
+        .from('city_cache')
         .select('endpoint, created_at, expires_at')
         .order('created_at', { ascending: false });
 
@@ -57,12 +57,12 @@ export async function POST(request: NextRequest) {
       
       // Get count before cleanup
       const { count: beforeCount } = await supabase
-        .from('amadeus_cache')
+        .from('city_cache')
         .select('*', { count: 'exact', head: true });
 
       // Get expired count
       const { count: expiredCount } = await supabase
-        .from('amadeus_cache')
+        .from('city_cache')
         .select('*', { count: 'exact', head: true })
         .lt('expires_at', new Date().toISOString());
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       
       // Get count after cleanup
       const { count: afterCount } = await supabase
-        .from('amadeus_cache')
+        .from('city_cache')
         .select('*', { count: 'exact', head: true });
 
       const duration = Date.now() - startTime;
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       // Log the cleanup operation
       try {
         await supabase
-          .from('amadeus_cache_cleanup_logs')
+          .from('city_cache_cleanup_logs')
           .insert({
             cleanup_date: new Date().toISOString(),
             deleted_entries: deletedCount,
@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest) {
   try {
     // Check if cleanup should run based on last cleanup time
     const { data: lastCleanup } = await supabase
-      .from('amadeus_cache_cleanup_logs')
+      .from('city_cache_cleanup_logs')
       .select('cleanup_date')
       .order('cleanup_date', { ascending: false })
       .limit(1)
@@ -137,7 +137,7 @@ export async function PUT(request: NextRequest) {
 
       // Log the cleanup
       await supabase
-        .from('amadeus_cache_cleanup_logs')
+        .from('city_cache_cleanup_logs')
         .insert({
           cleanup_date: now.toISOString(),
           deleted_entries: 0, // Could enhance to track actual count

@@ -19,12 +19,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Starting Amadeus cache cleanup...')
+    console.log('Starting City cache cleanup...')
     const startTime = Date.now()
 
     // Delete expired cache entries
     const { data, error } = await supabaseClient
-      .from('amadeus_cache')
+      .from('city_cache')
       .delete()
       .lt('expires_at', new Date().toISOString())
 
@@ -47,13 +47,13 @@ serve(async (req) => {
 
     // Get count of remaining active entries
     const { count: activeCount } = await supabaseClient
-      .from('amadeus_cache')
+      .from('city_cache')
       .select('*', { count: 'exact', head: true })
       .gte('expires_at', new Date().toISOString())
 
     // Log the cleanup operation (optional)
     await supabaseClient
-      .from('amadeus_cache_cleanup_logs')
+      .from('city_cache_cleanup_logs')
       .insert({
         cleanup_date: new Date().toISOString(),
         deleted_entries: data?.length || 0,

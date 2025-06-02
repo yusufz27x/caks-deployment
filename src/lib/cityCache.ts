@@ -40,7 +40,7 @@ export async function getCachedResponse(
     const cacheKey = generateCacheKey(endpoint, params);
     
     const { data, error } = await supabase
-      .from('amadeus_cache')
+      .from('city_cache')
       .select('response_data, expires_at')
       .eq('cache_key', cacheKey)
       .single();
@@ -61,7 +61,7 @@ export async function getCachedResponse(
     if (now > expiresAt) {
       // Cache expired, delete the entry
       await supabase
-        .from('amadeus_cache')
+        .from('city_cache')
         .delete()
         .eq('cache_key', cacheKey);
       
@@ -98,7 +98,7 @@ export async function setCachedResponse(
 
     // Use upsert to handle both insert and update cases
     const { error } = await supabase
-      .from('amadeus_cache')
+      .from('city_cache')
       .upsert(cacheEntry, {
         onConflict: 'cache_key'
       });
@@ -119,7 +119,7 @@ export async function cleanExpiredCache(): Promise<void> {
     const now = new Date().toISOString();
     
     const { error } = await supabase
-      .from('amadeus_cache')
+      .from('city_cache')
       .delete()
       .lt('expires_at', now);
 
@@ -137,7 +137,7 @@ export async function cleanExpiredCache(): Promise<void> {
 export async function clearAllCache(): Promise<void> {
   try {
     const { error } = await supabase
-      .from('amadeus_cache')
+      .from('city_cache')
       .delete()
       .neq('id', 0); // Delete all rows
 

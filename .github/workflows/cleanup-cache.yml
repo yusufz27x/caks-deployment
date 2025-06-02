@@ -3,32 +3,32 @@ name: Weekly Cache Cleanup
 on:
   schedule:
     # Run every Sunday at 2 AM UTC
-    - cron: '0 2 * * 0'
+    - cron: "0 2 * * 0"
   workflow_dispatch: # Allow manual triggering
 
 jobs:
   cleanup-cache:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Cleanup Expired Cache Entries
         run: |
-          echo "🧹 Starting weekly cleanup of expired Amadeus, Gemini & Unsplash cache entries..."
-          
+          echo "🧹 Starting weekly cleanup of expired City, Gemini & Unsplash cache entries..."
+
           # Call the cleanup API endpoint
           response=$(curl -s -w "%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
             -d '{"action":"cleanup"}' \
             "${{ secrets.VERCEL_APP_URL }}/api/cache")
-          
+
           # Extract HTTP status code (last 3 characters)
           http_code=${response: -3}
           body=${response%???}
-          
+
           echo "HTTP Status: $http_code"
           echo "Response: $body"
-          
+
           if [ $http_code -eq 200 ]; then
             echo "✅ Cache cleanup completed successfully"
             
@@ -40,8 +40,8 @@ jobs:
             echo "Response: $body"
             exit 1
           fi
-          
+
       - name: Log Completion
         run: |
           echo "🎉 Weekly cache maintenance completed"
-          echo "Next cleanup scheduled for next Sunday at 2 AM UTC" 
+          echo "Next cleanup scheduled for next Sunday at 2 AM UTC"

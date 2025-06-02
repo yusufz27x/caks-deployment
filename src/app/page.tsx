@@ -25,7 +25,7 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="relative min-h-screen">
+    <main className="relative h-screen overflow-hidden">
       {/* Background Image with Dark Mode Overlay */}
       <div>
         <Image src="/background.png" alt="Header" fill className="object-cover" />
@@ -35,7 +35,11 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10">
         {/* Top Navigation */}
-        <Header />
+        <Header 
+          onAboutClick={() => {}}
+          onSettingsClick={() => {}}
+          onLicenseClick={() => {}}
+        />
 
         {/* Main Content */}
         <div className="flex min-h-screen flex-col items-center justify-center px-4">

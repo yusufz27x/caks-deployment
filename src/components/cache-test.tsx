@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from 'react';
-import { useAmadeus } from '@/lib/hooks/useAmadeus';
+import { useCityData } from '@/lib/hooks/useCityData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function CacheTest() {
-  const { searchHotels, searchLocations, searchPointsOfInterest, loading, error, data } = useAmadeus();
+  const { searchHotels, searchLocations, searchPointsOfInterest, loading, error, data } = useCityData();
   const [cacheStats, setCacheStats] = useState<any>(null);
   const [requestTimes, setRequestTimes] = useState<number[]>([]);
 
@@ -102,7 +102,7 @@ export function CacheTest() {
     <div className="p-6 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>🧪 Amadeus Cache Testing</CardTitle>
+          <CardTitle>🧪 City Cache Testing</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

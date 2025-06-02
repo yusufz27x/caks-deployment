@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Search, Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Search, Loader2, Clock } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 
@@ -14,6 +14,22 @@ interface CitySuggestion {
   originalData?: any;
 }
 
+// Function to manage latest searches in localStorage
+const LATEST_SEARCHES_KEY = 'latestCitySearches';
+
+const getLatestSearches = (): CitySuggestion[] => {
+  if (typeof window === 'undefined') return [];
+  const searches = localStorage.getItem(LATEST_SEARCHES_KEY);
+  return searches ? JSON.parse(searches) : [];
+};
+
+const addToLatestSearches = (city: CitySuggestion) => {
+  const searches = getLatestSearches();
+  const newSearches = [city, ...searches.filter(s => s.value !== city.value)].slice(0, 5);
+  localStorage.setItem(LATEST_SEARCHES_KEY, JSON.stringify(newSearches));
+  return newSearches;
+};
+
 export function CitySearch() {
   const [inputValue, setInputValue] = React.useState("")
   const [showSuggestions, setShowSuggestions] = React.useState(false)
@@ -21,10 +37,22 @@ export function CitySearch() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isNavigating, setIsNavigating] = React.useState(false); // New state for navigation loading
   const [geoapifyError, setGeoapifyError] = React.useState<string | null>(null); // For Geoapify API errors
+  const [latestSearches, setLatestSearches] = React.useState<CitySuggestion[]>([])
 
   const inputRef = React.useRef<HTMLInputElement>(null)
   const commandRef = React.useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
+
+  // Reset navigation state when pathname changes
+  React.useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
+  // Load latest searches on mount
+  React.useEffect(() => {
+    setLatestSearches(getLatestSearches());
+  }, []);
 
   React.useEffect(() => {
     if (inputValue.length < 3) {
@@ -142,24 +170,34 @@ export function CitySearch() {
     };
   }, []);
 
-  const handleSelect = async (selectedValue: string, selectedLabel: string) => {
-    setInputValue(selectedLabel); 
+  const handleSelect = async (selectedValue: string, selectedLabel: string, originalData?: any) => {
+    setInputValue(selectedLabel);
     setShowSuggestions(false);
-    setIsNavigating(true); // Start navigation loading
+    
+    // Save to latest searches
+    const newCity: CitySuggestion = {
+      value: selectedValue,
+      label: selectedLabel,
+      originalData
+    };
+    const updatedSearches = addToLatestSearches(newCity);
+    setLatestSearches(updatedSearches);
     
     try {
-      await router.push(`/city/${selectedValue}`); 
+      // Navigate to the city page
+      router.push(`/city/${selectedValue}`);
+      // Set navigating state after navigation starts
+      setIsNavigating(true);
     } catch (error) {
       console.error("Navigation error:", error);
-      setIsNavigating(false); // Reset loading state on error
+      setIsNavigating(false);
     }
-    // Note: setIsNavigating(false) will be called when component unmounts or new page loads
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); 
     if (suggestions.length > 0) {
-      await handleSelect(suggestions[0].value, suggestions[0].label);
+      await handleSelect(suggestions[0].value, suggestions[0].label, suggestions[0].originalData);
     }
     // If no suggestions, pressing enter does nothing beyond preventing default
   };
@@ -175,8 +213,10 @@ export function CitySearch() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onFocus={() => {
-              // Show suggestions if input is already valid and has suggestions
               if (inputValue.length >= 3 && suggestions.length > 0) {
+                setShowSuggestions(true);
+              } else if (inputValue.length === 0) {
+                // Show latest searches when input is empty
                 setShowSuggestions(true);
               }
             }}
@@ -193,7 +233,7 @@ export function CitySearch() {
       {showSuggestions && !isNavigating && (
         <div ref={commandRef} className="absolute mt-2 w-full rounded-2xl border border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-2xl z-50 overflow-hidden">
           <Command>
-            <CommandList>
+            <CommandList className="max-h-[300px] overflow-y-auto">
               {isLoading && (
                 <CommandItem className="flex items-center gap-3 p-4 text-sm text-gray-600 dark:text-gray-400">
                   <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/50">
@@ -202,7 +242,28 @@ export function CitySearch() {
                   <span className="font-medium">Searching cities...</span>
                 </CommandItem>
               )}
-              {!isLoading && suggestions.length === 0 && inputValue.length >=3 && (
+              
+              {!isLoading && inputValue.length === 0 && latestSearches.length > 0 && (
+                <CommandGroup heading="Recent Searches">
+                  {latestSearches.map((city) => (
+                    <CommandItem
+                      key={city.value}
+                      value={city.label}
+                      onSelect={() => handleSelect(city.value, city.label, city.originalData)}
+                      className="cursor-pointer p-4 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30 hover:text-blue-700 dark:hover:text-blue-300 border-b border-gray-200/30 dark:border-gray-700/30 last:border-b-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-gradient-to-br from-gray-100 to-blue-100 dark:from-gray-900/50 dark:to-blue-900/50">
+                          <Clock className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                        </div>
+                        <span className="font-medium">{city.label}</span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+
+              {!isLoading && inputValue.length >= 3 && suggestions.length === 0 && (
                 <CommandEmpty className="p-4 text-center text-gray-600 dark:text-gray-400">
                   <div className="flex flex-col items-center gap-2">
                     <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-800">
@@ -216,7 +277,7 @@ export function CitySearch() {
                 <CommandItem
                   key={city.value + city.label} // Ensure unique key
                   value={city.label} // Value for CMDK filtering/selection
-                  onSelect={() => handleSelect(city.value, city.label)}
+                  onSelect={() => handleSelect(city.value, city.label, city.originalData)}
                   className="cursor-pointer p-4 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30 hover:text-blue-700 dark:hover:text-blue-300 border-b border-gray-200/30 dark:border-gray-700/30 last:border-b-0"
                 >
                   <div className="flex items-center gap-3">

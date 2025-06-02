@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-interface AmadeusHookState {
+interface CityHookState {
   loading: boolean;
   error: string | null;
   data: any | null;
@@ -27,8 +27,8 @@ interface POISearchParams {
   categoryFilter?: string;
 }
 
-export function useAmadeus() {
-  const [state, setState] = useState<AmadeusHookState>({
+export function useCity() {
+  const [state, setState] = useState<CityHookState>({
     loading: false,
     error: null,
     data: null
@@ -45,7 +45,7 @@ export function useAmadeus() {
         }
       });
       
-      const response = await fetch(`/api/amadeus/hotels?${queryParams.toString()}`);
+      const response = await fetch(`/api/city/hotels?${queryParams.toString()}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -72,7 +72,7 @@ export function useAmadeus() {
         }
       });
       
-      const response = await fetch(`/api/amadeus/locations?${queryParams.toString()}`);
+      const response = await fetch(`/api/city/locations?${queryParams.toString()}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -99,7 +99,7 @@ export function useAmadeus() {
         }
       });
       
-      const response = await fetch(`/api/amadeus/poi?${queryParams.toString()}`);
+      const response = await fetch(`/api/city/poi?${queryParams.toString()}`);
       const data = await response.json();
       
       if (!response.ok) {

@@ -137,7 +137,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-800/50 shadow-lg">
+      <div className="fixed top-0 left-0 right-0 z-50">
         <Header 
           onAboutClick={() => setIsAboutOpen(true)}
           onSettingsClick={() => setIsSettingsOpen(true)}
@@ -146,7 +146,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
       </div>
 
       {/* Hero Section */}
-      <section className="relative h-[60vh] pt-[64px] -mt-[1px]">
+      <section className="relative h-[80vh] pt-[64px] -mt-[1px]">
         <div className="absolute inset-0 top-0">
           <Image
             src={image || "/placeholder.svg"}
@@ -155,9 +155,9 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-transparent" />
         </div>
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
+        <div className="relative z-10 flex h-full flex-col items-center justify-center -mt-24 px-4 text-center">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
             <h1 className="mb-4 text-4xl font-bold text-white md:text-6xl drop-shadow-lg">{displayName}</h1>
             <p className="text-2xl text-white/90 font-medium">{displayCountry}</p>
@@ -166,10 +166,10 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
       </section>
 
       {/* City Description */}
-      <section className="py-12 bg-gradient-to-r from-blue-50/50 via-white to-purple-50/50 dark:from-blue-950/10 dark:via-gray-900 dark:to-purple-950/10">
+      <section className="relative -mt-48 pb-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+            <div className="bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
               <p className="text-lg leading-relaxed text-gray-700 dark:text-gray-300">{displayDescription}</p>
             </div>
           </div>

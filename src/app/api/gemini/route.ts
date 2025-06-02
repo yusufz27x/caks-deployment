@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
-import { getCachedResponse, setCachedResponse } from '@/lib/amadeusCache';
+import { getCachedResponse, setCachedResponse } from '@/lib/cityCache';
 
 // Gemini API anahtarınızı ortam değişkenlerinden alın
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
