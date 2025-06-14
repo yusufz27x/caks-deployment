@@ -23,6 +23,8 @@ interface CityPageData {
   slug: string;
   cityName: string;
   country: string;
+  region?: string;
+  state?: string;
   cityDescription: string;
   coordinates: Coordinates | null;
   image: string;
@@ -44,6 +46,7 @@ async function getCityImage(cityName: string): Promise<string | null> {
   const cacheParams = { cityName };
 
   // Check cache first
+  let cachedImageUrl = null;
   try {
     const cachedResponse = await getCachedResponse(endpoint, cacheParams);
     if (cachedResponse) {
@@ -55,11 +58,13 @@ async function getCityImage(cityName: string): Promise<string | null> {
   }
 
   try {
+    // Append "city" to the search query for better image results
+    const searchQuery = `${cityName} city`;
     const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(cityName)}&per_page=1&orientation=landscape&client_id=${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=1&orientation=landscape&client_id=${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
     );
     if (!response.ok) {
-      console.error(`Unsplash API error for ${cityName}: ${response.status}`);
+      console.error(`Unsplash API error for ${searchQuery}: ${response.status}`);
       return null;
     }
     const data = await response.json();
@@ -68,13 +73,16 @@ async function getCityImage(cityName: string): Promise<string | null> {
     if (data.results && data.results.length > 0 && data.results[0].urls) {
       imageUrl = data.results[0].urls.regular;
       
-      // Cache the successful response
-      try {
-        const cacheData = { imageUrl };
-        await setCachedResponse(endpoint, cacheParams, cacheData);
-        console.log('Cached new Unsplash image for:', cityName);
-      } catch (cacheError) {
-        console.warn('Failed to cache Unsplash response:', cacheError);
+      // Try to cache the successful response, but don't fail if caching fails
+      if (imageUrl) {
+        try {
+          const cacheData = { imageUrl };
+          await setCachedResponse(endpoint, cacheParams, cacheData);
+          console.log('Cached new Unsplash image for:', cityName);
+        } catch (cacheError) {
+          console.warn('Failed to cache Unsplash response, but continuing without cache:', cacheError);
+          // Continue without caching - the image will still be returned
+        }
       }
     }
     
@@ -85,11 +93,18 @@ async function getCityImage(cityName: string): Promise<string | null> {
   }
 }
 
-export default async function CityPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function CityPage({ params, searchParams }: { 
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ name?: string }>;
+}) {
   const { slug } = await params;
+  const { name: originalName } = await searchParams;
+  
+  // Use the original name for API calls if available, otherwise fall back to slug
+  const locationQuery = originalName || slug;
   
   // Use the server action to fetch city data
-  const cityData = await getCityData(slug);
+  const cityData = await getCityData(locationQuery);
 
   if (cityData.error || !cityData.cityName) {
     return (
@@ -111,6 +126,8 @@ export default async function CityPage({ params }: { params: Promise<{ slug: str
     cityName: cityData.cityName,
     name: cityData.cityName,
     country: cityData.country || "Unknown",
+    region: cityData.region,
+    state: cityData.state,
     cityDescription: cityData.cityDescription || `Explore ${cityData.cityName}`,
     description: cityData.cityDescription || `Explore ${cityData.cityName}`,
     coordinates: null, // We'll need to add coordinates to the response if needed

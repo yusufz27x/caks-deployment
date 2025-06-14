@@ -45,6 +45,8 @@ interface CityPageData {
   slug: string;
   name: string;
   country: string;
+  region?: string;
+  state?: string;
   description: string;
   image: string;
   coordinates: Coordinates | null;
@@ -79,6 +81,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
   const tabsRef = useRef<Array<HTMLButtonElement | null>>([])
   const [tabUnderlineWidth, setTabUnderlineWidth] = useState(0)
   const [tabUnderlineLeft, setTabUnderlineLeft] = useState(0)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Function to get tab index
   const getTabIndex = (value: string) => tabsConfig.findIndex(tab => tab.value === value)
@@ -99,22 +102,91 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
 
   // NEW: useLayoutEffect for calculating underline position
   useLayoutEffect(() => {
-    const activeIndex = tabsConfig.findIndex(tab => tab.value === currentTabValue);
-    if (activeIndex !== -1 && tabsRef.current[activeIndex]) {
-      const currentTabElement = tabsRef.current[activeIndex] as HTMLElement;
-      setTabUnderlineLeft(currentTabElement.offsetLeft);
-      setTabUnderlineWidth(currentTabElement.clientWidth);
-    } else {
-      // Fallback if no active tab or ref not ready (e.g. hide underline)
-      // Attempt to set to the first tab if possible or hide
-      if (tabsRef.current[0]) {
-        setTabUnderlineLeft(tabsRef.current[0].offsetLeft);
-        setTabUnderlineWidth(tabsRef.current[0].clientWidth);
+    const updateTabUnderline = () => {
+      const activeIndex = tabsConfig.findIndex(tab => tab.value === currentTabValue);
+      console.log('Updating tab underline for:', currentTabValue, 'activeIndex:', activeIndex);
+      
+      if (activeIndex !== -1 && tabsRef.current[activeIndex]) {
+        const currentTabElement = tabsRef.current[activeIndex] as HTMLElement;
+        const newLeft = currentTabElement.offsetLeft;
+        const newWidth = currentTabElement.clientWidth;
+        
+        console.log('Tab element found:', {
+          left: newLeft,
+          width: newWidth,
+          element: currentTabElement
+        });
+        
+        setTabUnderlineLeft(newLeft);
+        setTabUnderlineWidth(newWidth);
+        setIsInitialized(true);
       } else {
-        setTabUnderlineWidth(0); // Hide if first tab also not available
+        console.log('Tab element not found, trying first tab as fallback');
+        // Fallback to first tab if active tab not found
+        if (tabsRef.current[0]) {
+          const firstTabElement = tabsRef.current[0] as HTMLElement;
+          setTabUnderlineLeft(firstTabElement.offsetLeft);
+          setTabUnderlineWidth(firstTabElement.clientWidth);
+          setIsInitialized(true);
+        } else {
+          console.log('No tabs available');
+          setTabUnderlineWidth(0); // Hide if no tabs available
+        }
       }
-    }
+    };
+
+    updateTabUnderline();
   }, [currentTabValue]); // Rerun when currentTabValue changes
+
+  // Additional effect to handle initial render and ensure underline appears
+  useLayoutEffect(() => {
+    const initializeUnderline = () => {
+      console.log('Initializing underline on mount');
+      const activeIndex = tabsConfig.findIndex(tab => tab.value === currentTabValue);
+      if (activeIndex !== -1 && tabsRef.current[activeIndex]) {
+        const currentTabElement = tabsRef.current[activeIndex] as HTMLElement;
+        setTabUnderlineLeft(currentTabElement.offsetLeft);
+        setTabUnderlineWidth(currentTabElement.clientWidth);
+        setIsInitialized(true);
+        console.log('Initial underline set:', {
+          left: currentTabElement.offsetLeft,
+          width: currentTabElement.clientWidth
+        });
+      } else {
+        // Try again after a delay
+        setTimeout(() => {
+          const retryActiveIndex = tabsConfig.findIndex(tab => tab.value === currentTabValue);
+          if (retryActiveIndex !== -1 && tabsRef.current[retryActiveIndex]) {
+            const currentTabElement = tabsRef.current[retryActiveIndex] as HTMLElement;
+            setTabUnderlineLeft(currentTabElement.offsetLeft);
+            setTabUnderlineWidth(currentTabElement.clientWidth);
+            setIsInitialized(true);
+            console.log('Delayed underline set:', {
+              left: currentTabElement.offsetLeft,
+              width: currentTabElement.clientWidth
+            });
+          }
+        }, 100);
+      }
+    };
+
+    initializeUnderline();
+  }, []); // Run only once on mount
+
+  // Handle window resize to recalculate tab positions
+  useLayoutEffect(() => {
+    const handleResize = () => {
+      const activeIndex = tabsConfig.findIndex(tab => tab.value === currentTabValue);
+      if (activeIndex !== -1 && tabsRef.current[activeIndex]) {
+        const currentTabElement = tabsRef.current[activeIndex] as HTMLElement;
+        setTabUnderlineLeft(currentTabElement.offsetLeft);
+        setTabUnderlineWidth(currentTabElement.clientWidth);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [currentTabValue]);
 
   const activeTabConfig = tabsConfig.find(tab => tab.value === currentTabValue);
 
@@ -157,7 +229,13 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
         <div className="relative z-10 flex h-full flex-col items-center justify-center -mt-24 px-4 text-center">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
             <h1 className="mb-4 text-4xl font-bold text-white md:text-6xl drop-shadow-lg">{displayName}</h1>
-            <p className="text-2xl text-white/90 font-medium">{displayCountry}</p>
+            <div className="text-2xl text-white/90 font-medium">
+              {cityPageData.state && <span>{cityPageData.state}</span>}
+              {cityPageData.region && cityPageData.state && <span>, </span>}
+              {cityPageData.region && <span>{cityPageData.region}</span>}
+              {(cityPageData.state || cityPageData.region) && <span>, </span>}
+              <span>{displayCountry}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -209,7 +287,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
           >
             <TabsList className="relative flex w-full h-14 items-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 shadow-xl rounded-2xl mb-8 px-1">
               {/* Animated Underline/Background */}
-              {activeTabConfig && (
+              {activeTabConfig && isInitialized && tabUnderlineWidth > 0 && (
                 <span
                   className="absolute z-0 flex overflow-hidden rounded-xl shadow-lg transition-all duration-300 ease-in-out"
                   style={{
@@ -217,12 +295,18 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
                     width: tabUnderlineWidth,
                     top: '0.25rem',
                     height: '3rem',
+                    opacity: isInitialized ? 1 : 0,
                   }}
                 >
                   <span 
                     className={`h-full w-full rounded-xl bg-gradient-to-r ${activeTabConfig.activeClasses}`} 
                   />
                 </span>
+              )}
+              
+              {/* Fallback underline if main one doesn't appear */}
+              {(!isInitialized || tabUnderlineWidth === 0) && (
+                <span className="absolute z-0 left-1 top-1 h-12 w-1/3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 ease-in-out opacity-100" />
               )}
 
               {tabsConfig.map((tab, index) => {

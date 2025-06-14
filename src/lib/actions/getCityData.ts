@@ -7,6 +7,8 @@ export interface CityDataResponse {
   error: string | null;
   cityName?: string;
   country?: string;
+  region?: string;
+  state?: string;
   cityDescription?: string;
   attractions: PointOfInterest[];
   kitchens: PointOfInterest[];
@@ -38,6 +40,8 @@ export async function getCityData(locationName: string): Promise<CityDataRespons
       error: null,
       cityName: data.cityName,
       country: data.country,
+      region: data.region,
+      state: data.state,
       cityDescription: data.cityDescription,
       attractions: data.attractions || [],
       kitchens: data.kitchens || [],

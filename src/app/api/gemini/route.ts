@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
 The JSON object must contain the following top-level keys:
 - "cityName": string
 - "country": string
+- "region": string (geographical region or state/province, e.g., "Marmara Region", "California", "Île-de-France")
+- "state": string (administrative state/province if different from region, e.g., "Istanbul", "New York", "Hauts-de-Seine")
 - "cityDescription": string (2-3 sentences, concise general description)
 - "coordinates": object with "latitude": number and "longitude": number
 - "attractions": array of objects
@@ -56,19 +58,21 @@ Ensure geographical coordinates are accurate. If the location query is ambiguous
 
 Example JSON structure:
 {
-  "cityName": "Paris",
-  "country": "France",
-  "cityDescription": "Paris, France's capital, is a major European city and a global center for art, fashion, gastronomy and culture.",
+  "cityName": "Istanbul",
+  "country": "Turkey",
+  "region": "Marmara Region",
+  "state": "Istanbul",
+  "cityDescription": "Istanbul, Turkey's largest city, is a vibrant metropolis that bridges Europe and Asia, known for its rich history, stunning architecture, and diverse culture.",
   "coordinates": {
-    "latitude": 48.8566,
-    "longitude": 2.3522
+    "latitude": 41.0082,
+    "longitude": 28.9784
   },
   "attractions": [
     {
-      "name": "Eiffel Tower",
-      "description": "Iconic Parisian landmark offering breathtaking city views.",
-      "website": "https://www.toureiffel.paris/",
-      "googleMapsLink": "https://maps.google.com/maps?q=Eiffel+Tower"
+      "name": "Hagia Sophia",
+      "description": "Historic Byzantine cathedral turned mosque, now a museum showcasing stunning architecture.",
+      "website": "https://ayasofyacamii.gov.tr/",
+      "googleMapsLink": "https://maps.google.com/maps?q=Hagia+Sophia"
     }
   ],
   "kitchens": [],

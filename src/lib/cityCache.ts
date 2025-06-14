@@ -104,10 +104,19 @@ export async function setCachedResponse(
       });
 
     if (error) {
-      console.error('Error storing cache entry:', error);
+      console.error('Error storing cache entry:', {
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        message: error.message
+      });
+      // Don't throw the error, just log it and continue
+      // This prevents the application from crashing due to cache issues
     }
   } catch (error) {
     console.error('Error in setCachedResponse:', error);
+    // Don't throw the error, just log it and continue
+    // This prevents the application from crashing due to cache issues
   }
 }
 

@@ -9,8 +9,9 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@
 // import { supabase } from "@/lib/supabaseClient"
 
 interface CitySuggestion {
-  value: string; 
-  label: string; 
+  value: string; // This will be the slug for URL routing
+  label: string; // This will be the display label
+  originalName?: string; // This will store the original city name for API calls
   originalData?: any;
 }
 
@@ -29,6 +30,21 @@ const addToLatestSearches = (city: CitySuggestion) => {
   localStorage.setItem(LATEST_SEARCHES_KEY, JSON.stringify(newSearches));
   return newSearches;
 };
+
+// Turkish character transliteration function
+function transliterateTurkish(text: string): string {
+  const turkishMap: { [key: string]: string } = {
+    'ç': 'c', 'Ç': 'C',
+    'ğ': 'g', 'Ğ': 'G',
+    'ı': 'i', 'I': 'I',
+    'İ': 'I',
+    'ö': 'o', 'Ö': 'O',
+    'ş': 's', 'Ş': 'S',
+    'ü': 'u', 'Ü': 'U'
+  };
+  
+  return text.replace(/[çğıöşüÇĞIİÖŞÜ]/g, (match) => turkishMap[match] || match);
+}
 
 export function CitySearch() {
   const [inputValue, setInputValue] = React.useState("")
@@ -109,13 +125,23 @@ export function CitySearch() {
         }
         const formattedSuggestions: CitySuggestion[] = (data.results || []).map((item: any) => {
           console.log("item", item);
-          let nameForSlug = item.name || item.city || item.street || 'location';
-          nameForSlug = nameForSlug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          const originalName = item.name || item.city || item.street || 'location';
+          let nameForSlug = originalName;
+          // First transliterate Turkish characters, then convert to lowercase and create slug
+          nameForSlug = transliterateTurkish(nameForSlug).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
           const countryPart = item.country_code ? item.country_code.toLowerCase() : '';
+          const regionPart = item.region ? transliterateTurkish(item.region).toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') : '';
+          
           let slug = nameForSlug;
-          if (countryPart && nameForSlug !== 'location') { 
-            slug = `${nameForSlug}-${countryPart}`;
+          if (countryPart && nameForSlug !== 'location') {
+            if (regionPart) {
+              // Format: city-region-country
+              slug = `${nameForSlug}-${regionPart}-${countryPart}`;
+            } else {
+              // Fallback to city-country if no region
+              slug = `${nameForSlug}-${countryPart}`;
+            }
           } else if (nameForSlug === 'location' && countryPart) {
             slug = `${countryPart}-city`; 
           } else if (nameForSlug === 'location') {
@@ -127,8 +153,9 @@ export function CitySearch() {
             const namePartDisplay = item.name || item.street;
             const cityPartDisplay = item.city;
             const statePartDisplay = item.state;
+            const regionPartDisplay = item.region;
             const countryPartDisplay = item.country;
-            let parts = [namePartDisplay, cityPartDisplay, statePartDisplay, countryPartDisplay].filter(Boolean);
+            let parts = [namePartDisplay, cityPartDisplay, statePartDisplay, regionPartDisplay, countryPartDisplay].filter(Boolean);
             displayLabel = parts.join(', ');
             if (!displayLabel) displayLabel = 'Unknown Location';
           }
@@ -136,6 +163,7 @@ export function CitySearch() {
           return {
             value: slug, 
             label: displayLabel,
+            originalName: originalName, // Store the original name for API calls
             originalData: item,
           };
         });
@@ -174,18 +202,25 @@ export function CitySearch() {
     setInputValue(selectedLabel);
     setShowSuggestions(false);
     
+    // Find the selected city to get the original name
+    const selectedCity = suggestions.find(city => city.value === selectedValue) || 
+                        latestSearches.find(city => city.value === selectedValue);
+    
     // Save to latest searches
     const newCity: CitySuggestion = {
       value: selectedValue,
       label: selectedLabel,
+      originalName: selectedCity?.originalName,
       originalData
     };
     const updatedSearches = addToLatestSearches(newCity);
     setLatestSearches(updatedSearches);
     
     try {
-      // Navigate to the city page
-      router.push(`/city/${selectedValue}`);
+      // Navigate to the city page with original name as query parameter
+      const originalName = selectedCity?.originalName || selectedLabel;
+      const encodedOriginalName = encodeURIComponent(originalName);
+      router.push(`/city/${selectedValue}?name=${encodedOriginalName}`);
       // Set navigating state after navigation starts
       setIsNavigating(true);
     } catch (error) {
