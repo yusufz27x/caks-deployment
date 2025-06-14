@@ -49,6 +49,7 @@ interface CityPageData {
   state?: string;
   description: string;
   image: string;
+  imageAttribution?: string; // For Google Places photo attribution
   coordinates: Coordinates | null;
 }
 
@@ -225,6 +226,12 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-transparent" />
+          {/* Photo Attribution */}
+          {cityPageData.imageAttribution && (
+            <div className="absolute bottom-2 right-2 text-xs text-white/70 bg-black/20 backdrop-blur-sm px-2 py-1 rounded">
+              Photo: {cityPageData.imageAttribution}
+            </div>
+          )}
         </div>
         <div className="relative z-10 flex h-full flex-col items-center justify-center -mt-24 px-4 text-center">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">

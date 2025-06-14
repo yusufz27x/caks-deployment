@@ -4,6 +4,7 @@ import { DynamicCityContent } from "./dynamic-city-content"
 import type { Coordinates } from "@/lib/hooks/useCityData"
 import { getCachedResponse, setCachedResponse } from '@/lib/cityCache'
 import { getCityData } from "@/lib/actions/getCityData"
+import { getCityPhotoWithFallback } from '@/lib/services/googlePlaces'
 
 // Define the structure for individual items (attractions, kitchens, stays)
 interface PlaceItem {
@@ -28,6 +29,7 @@ interface CityPageData {
   cityDescription: string;
   coordinates: Coordinates | null;
   image: string;
+  imageAttribution?: string;
   attractions: PlaceItem[];
   kitchens: PlaceItem[];
   stays: PlaceItem[];
@@ -35,63 +37,60 @@ interface CityPageData {
   description: string;
 }
 
-// Keep getCityImage for Unsplash image fetching
-async function getCityImage(cityName: string): Promise<string | null> {
-  if (!process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY) {
-    // console.warn("Unsplash API key not found. Skipping dynamic image fetch."); // Less verbose
-    return null;
-  }
-
-  const endpoint = 'unsplash';
-  const cacheParams = { cityName };
-
-  // Check cache first
-  let cachedImageUrl = null;
-  try {
-    const cachedResponse = await getCachedResponse(endpoint, cacheParams);
-    if (cachedResponse) {
-      console.log('Returning cached Unsplash image for:', cityName);
-      return cachedResponse.imageUrl;
+    // Updated to use Google Places API instead of Unsplash
+  async function getCityImage(cityName: string, country?: string): Promise<{ photoUrl: string | null; attribution?: string }> {
+    if (!process.env.GOOGLE_PLACES_API_KEY) {
+      console.warn("Google Places API key not found. Skipping dynamic image fetch.");
+      return { photoUrl: null };
     }
-  } catch (cacheError) {
-    console.warn('Cache lookup failed for Unsplash, proceeding with API call:', cacheError);
-  }
 
-  try {
-    // Append "city" to the search query for better image results
-    const searchQuery = `${cityName} city`;
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=1&orientation=landscape&client_id=${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
-    );
-    if (!response.ok) {
-      console.error(`Unsplash API error for ${searchQuery}: ${response.status}`);
-      return null;
-    }
-    const data = await response.json();
-    
-    let imageUrl = null;
-    if (data.results && data.results.length > 0 && data.results[0].urls) {
-      imageUrl = data.results[0].urls.regular;
-      
-      // Try to cache the successful response, but don't fail if caching fails
-      if (imageUrl) {
-        try {
-          const cacheData = { imageUrl };
-          await setCachedResponse(endpoint, cacheParams, cacheData);
-          console.log('Cached new Unsplash image for:', cityName);
-        } catch (cacheError) {
-          console.warn('Failed to cache Unsplash response, but continuing without cache:', cacheError);
-          // Continue without caching - the image will still be returned
-        }
+    const endpoint = 'google-places';
+    const cacheParams = { cityName, country: country || '' };
+
+    // Check cache first
+    try {
+      const cachedResponse = await getCachedResponse(endpoint, cacheParams);
+      if (cachedResponse) {
+        console.log('Returning cached Google Places image for:', cityName);
+        return { 
+          photoUrl: cachedResponse.photoUrl,
+          attribution: cachedResponse.attribution 
+        };
       }
+    } catch (cacheError) {
+      console.warn('Cache lookup failed for Google Places, proceeding with API call:', cacheError);
     }
-    
-    return imageUrl;
-  } catch (error) {
-    console.error(`Failed to fetch image from Unsplash for ${cityName}:`, error);
-    return null;
+
+    try {
+      // Use the new Google Places photo service
+      const result = await getCityPhotoWithFallback(cityName, country);
+      
+      if (result.photoUrl) {
+        // Try to cache the successful response
+        try {
+          const cacheData = { 
+            photoUrl: result.photoUrl,
+            attribution: result.attribution 
+          };
+          await setCachedResponse(endpoint, cacheParams, cacheData);
+          console.log('Cached new Google Places image for:', cityName);
+        } catch (cacheError) {
+          console.warn('Failed to cache Google Places response, but continuing without cache:', cacheError);
+        }
+        
+        return { 
+          photoUrl: result.photoUrl,
+          attribution: result.attribution 
+        };
+      } else {
+        console.log(`No Google Places image found for ${cityName}:`, result.error);
+        return { photoUrl: null };
+      }
+    } catch (error) {
+      console.error(`Failed to fetch image from Google Places for ${cityName}:`, error);
+      return { photoUrl: null };
+    }
   }
-}
 
 export default async function CityPage({ params, searchParams }: { 
   params: Promise<{ slug: string }>;
@@ -118,8 +117,8 @@ export default async function CityPage({ params, searchParams }: {
     );
   }
 
-  // Fetch dynamic image from Unsplash
-  const dynamicImageUrl = await getCityImage(cityData.cityName);
+  // Fetch dynamic image from Google Places
+  const imageResult = await getCityImage(cityData.cityName, cityData.country);
   
   const finalCityPageData: CityPageData = {
     slug,
@@ -131,7 +130,8 @@ export default async function CityPage({ params, searchParams }: {
     cityDescription: cityData.cityDescription || `Explore ${cityData.cityName}`,
     description: cityData.cityDescription || `Explore ${cityData.cityName}`,
     coordinates: null, // We'll need to add coordinates to the response if needed
-    image: dynamicImageUrl || `/images/default-city.jpg`,
+    image: imageResult.photoUrl || `/images/default-city.jpg`,
+    imageAttribution: imageResult.attribution,
     attractions: cityData.attractions,
     kitchens: cityData.kitchens,
     stays: cityData.stays,
