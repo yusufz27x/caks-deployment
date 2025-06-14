@@ -70,9 +70,6 @@ const tabContentVariants = {
 }
 
 export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
-  const [isAboutOpen, setIsAboutOpen] = useState(false)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isLicenseOpen, setIsLicenseOpen] = useState(false)
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
   const { loading, error, attractions, kitchens, stays, cityName: hookCityName, country: hookCountry, cityDescription: hookCityDescription } = useCityData(cityPageData.coordinates, cityPageData.name)
 
@@ -139,9 +136,9 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <Header 
-          onAboutClick={() => setIsAboutOpen(true)}
-          onSettingsClick={() => setIsSettingsOpen(true)}
-          onLicenseClick={() => setIsLicenseOpen(true)}
+          onAboutClick={() => {}}
+          onSettingsClick={() => {}}
+          onLicenseClick={() => {}}
         />
       </div>
 
@@ -528,9 +525,6 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
       </section>
 
       {/* Modals */}
-      <AboutModal open={isAboutOpen} onOpenChange={setIsAboutOpen} />
-      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-      <LicenseModal open={isLicenseOpen} onOpenChange={setIsLicenseOpen} />
       <AIAssistantModal open={isAIAssistantOpen} onOpenChange={setIsAIAssistantOpen} cityName={displayName} />
 
       {/* Floating AI Assistant Button */}

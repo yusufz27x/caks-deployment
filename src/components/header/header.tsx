@@ -18,6 +18,22 @@ export function Header({ onAboutClick, onSettingsClick, onLicenseClick }: Header
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLicenseOpen, setIsLicenseOpen] = useState(false)
 
+  // Handle modal state changes
+  const handleAboutOpenChange = (open: boolean) => {
+    setIsAboutOpen(open)
+    if (open) onAboutClick()
+  }
+
+  const handleSettingsOpenChange = (open: boolean) => {
+    setIsSettingsOpen(open)
+    if (open) onSettingsClick()
+  }
+
+  const handleLicenseOpenChange = (open: boolean) => {
+    setIsLicenseOpen(open)
+    if (open) onLicenseClick()
+  }
+
   return (
     <>
       <div className="absolute top-2 flex w-full justify-between px-4">
@@ -25,16 +41,16 @@ export function Header({ onAboutClick, onSettingsClick, onLicenseClick }: Header
           <ModeToggle />
         </div>
         <Menu 
-          onAboutClick={onAboutClick}
-          onSettingsClick={onSettingsClick}
-          onLicenseClick={onLicenseClick}
+          onAboutClick={() => setIsAboutOpen(true)}
+          onSettingsClick={() => setIsSettingsOpen(true)}
+          onLicenseClick={() => setIsLicenseOpen(true)}
         />
       </div>
 
       {/* Modals */}
-      <AboutModal open={isAboutOpen} onOpenChange={setIsAboutOpen} />
-      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-      <LicenseModal open={isLicenseOpen} onOpenChange={setIsLicenseOpen} />
+      <AboutModal open={isAboutOpen} onOpenChange={handleAboutOpenChange} />
+      <SettingsModal open={isSettingsOpen} onOpenChange={handleSettingsOpenChange} />
+      <LicenseModal open={isLicenseOpen} onOpenChange={handleLicenseOpenChange} />
     </>
   )
 }
