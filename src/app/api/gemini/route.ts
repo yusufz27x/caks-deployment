@@ -52,7 +52,7 @@ For each item within "attractions", "kitchens", and "stays" arrays, each object 
 - "website": string (URL or "N/A" if not available)
 - "googleMapsLink": string (URL or "N/A" if not available)
 
-Provide 3-5 relevant suggestions for each category (attractions, kitchens, stays) if possible.
+Provide 6-12 relevant suggestions for each category (attractions, kitchens, stays) if possible.
 If information for a category or specific field is not found, use an empty array for categories or "N/A" for fields.
 Ensure geographical coordinates are accurate. If the location query is ambiguous, use the most common interpretation.
 

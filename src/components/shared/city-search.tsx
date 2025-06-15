@@ -206,11 +206,13 @@ export function CitySearch() {
     const selectedCity = suggestions.find(city => city.value === selectedValue) || 
                         latestSearches.find(city => city.value === selectedValue);
     
+    console.log(selectedCity)
+
     // Save to latest searches
     const newCity: CitySuggestion = {
       value: selectedValue,
       label: selectedLabel,
-      originalName: selectedCity?.originalName,
+      originalName: selectedCity?.label,
       originalData
     };
     const updatedSearches = addToLatestSearches(newCity);
@@ -218,8 +220,9 @@ export function CitySearch() {
     
     try {
       // Navigate to the city page with original name as query parameter
-      const originalName = selectedCity?.originalName || selectedLabel;
+      const originalName = selectedCity?.label || selectedLabel;
       const encodedOriginalName = encodeURIComponent(originalName);
+      console.log(originalName)
       router.push(`/city/${selectedValue}?name=${encodedOriginalName}`);
       // Set navigating state after navigation starts
       setIsNavigating(true);

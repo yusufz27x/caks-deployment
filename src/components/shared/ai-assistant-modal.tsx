@@ -31,6 +31,11 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
     const newConversation = [...conversation, { role: 'user' as const, content: userMessage }]
     setConversation(newConversation)
 
+    const history = conversation.map((msg) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -40,6 +45,7 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
         body: JSON.stringify({
           message: userMessage,
           cityName,
+          history,
         }),
       })
 
@@ -49,7 +55,15 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
 
       const data = await response.json()
       
-      setConversation([...newConversation, { role: 'assistant', content: data.response }])
+      let assistantResponse = data.response
+      // The AI might wrap the response in markdown code blocks, so we remove them before rendering.
+      const codeBlockRegex = /^```(?:[a-zA-Z]+\n)?([\s\S]*?)```$/
+      const match = assistantResponse.match(codeBlockRegex)
+      if (match) {
+        assistantResponse = match[1]
+      }
+      
+      setConversation([...newConversation, { role: 'assistant', content: assistantResponse }])
     } catch (error) {
       console.error('Error sending message:', error)
       setConversation([...newConversation, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }])
