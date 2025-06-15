@@ -16,24 +16,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if Gemini API key exists
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is not set');
+      return NextResponse.json(
+        { error: "Gemini API key not configured" },
+        { status: 500 }
+      );
+    }
+
+    console.log('Processing Gemini request for:', locationQuery);
+
     const endpoint = 'gemini';
     const cacheParams = { locationQuery };
 
     // Önce önbelleği kontrol et
     try {
+      console.log('Checking cache for:', locationQuery);
       const cachedResponse = await getCachedResponse(endpoint, cacheParams);
       if (cachedResponse) {
         console.log('Returning cached Gemini data for:', locationQuery);
         return NextResponse.json(cachedResponse);
       }
+      console.log('No cache found, proceeding with Gemini API call');
     } catch (cacheError) {
       console.warn('Cache lookup failed for Gemini, proceeding with API call:', cacheError);
     }
 
     // gemini-2.0-flash modelini kullanın. Bu model hız için optimize edilmiştir.
+    console.log('Initializing Gemini model...');
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // İstemi sadeleştirilmiş ve daha doğrudan hale getirilmiş hali
+    console.log('Calling Gemini API for:', locationQuery);
     const prompt = `Provide detailed information for the location "${locationQuery}" as a single JSON object.
 The JSON object must contain the following top-level keys:
 - "cityName": string
@@ -80,9 +95,34 @@ Example JSON structure:
 }
 `;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    let text = response.text();
+    let result, response, text;
+    try {
+      result = await model.generateContent(prompt);
+      response = result.response;
+      text = response.text();
+      console.log('Gemini API call successful');
+    } catch (geminiError: any) {
+      console.error('Gemini API call failed:', geminiError);
+      console.error('Error details:', {
+        message: geminiError.message,
+        status: geminiError.status,
+        statusText: geminiError.statusText,
+        code: geminiError.code
+      });
+      
+      // Return specific error based on the Gemini error
+      if (geminiError.status === 401) {
+        return NextResponse.json(
+          { error: "Gemini API authentication failed. Please check your API key." },
+          { status: 401 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: `Gemini API error: ${geminiError.message}` },
+        { status: geminiError.status || 500 }
+      );
+    }
 
     // Gemini yanıtını JSON formatına uygun hale getir
     let cleanedText = text;
@@ -118,11 +158,17 @@ Example JSON structure:
     }
 
     return NextResponse.json(data);
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    console.error('Unexpected error in Gemini API:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      status: error.status
+    });
+    
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: `Internal server error: ${error.message}` },
+      { status: error.status || 500 }
     );
   }
 }
