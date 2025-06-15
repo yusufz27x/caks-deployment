@@ -21,6 +21,10 @@ export async function getCityData(locationName: string): Promise<CityDataRespons
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
     
+    console.log('getCityData called with:', locationName);
+    console.log('Base URL:', baseUrl);
+    console.log('Full API URL:', `${baseUrl}/api/gemini`);
+    
     const response = await fetch(`${baseUrl}/api/gemini`, {
       method: 'POST',
       headers: {
@@ -29,8 +33,20 @@ export async function getCityData(locationName: string): Promise<CityDataRespons
       body: JSON.stringify({ locationQuery: locationName }),
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response statusText:', response.statusText);
+
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+      // Get response body for debugging
+      let errorBody;
+      try {
+        errorBody = await response.text();
+        console.log('Error response body:', errorBody);
+      } catch (e) {
+        console.log('Could not read error response body');
+      }
+      
+      throw new Error(`API error: ${response.status} - ${response.statusText} - ${errorBody || 'No error details'}`);
     }
 
     const data = await response.json();
