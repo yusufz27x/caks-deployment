@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from 'react';
-import { useCityData } from '@/lib/hooks/useCityData';
+import { useCity } from '@/lib/hooks/useCity';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function CacheTest() {
-  const { searchHotels, searchLocations, searchPointsOfInterest, loading, error, data } = useCityData();
+  const { searchHotels, searchLocations, searchPointsOfInterest, loading, error, data } = useCity();
   const [cacheStats, setCacheStats] = useState<any>(null);
   const [requestTimes, setRequestTimes] = useState<number[]>([]);
 
