@@ -17,7 +17,11 @@ export interface CityDataResponse {
 
 export async function getCityData(locationName: string): Promise<CityDataResponse> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || "http://localhost:3000"}/api/gemini`, {
+    // Construct the base URL properly
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    
+    const response = await fetch(`${baseUrl}/api/gemini`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
