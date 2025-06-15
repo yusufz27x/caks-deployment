@@ -23,7 +23,7 @@ export function LicenseModal({ open, onOpenChange }: LicenseModalProps) {
         </DialogHeader>
         <div className="mt-4 space-y-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 CAKS. All rights reserved.
+            © 2025 CAKS. All rights reserved.
           </p>
           <p className="text-sm text-muted-foreground">
             This application is licensed under the MIT License. See the LICENSE file for details.
