@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Bot, Send, MessageSquare, Loader2 } from "lucide-react"
 import { AnimatedDialogContent } from "@/components/shared/animated-dialog-content"
+import ReactMarkdown from 'react-markdown'
 
 interface AIAssistantModalProps {
   open: boolean
@@ -31,12 +32,24 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
     setConversation(newConversation)
 
     try {
-      // Simulate AI response - replace with actual AI API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          cityName,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from AI')
+      }
+
+      const data = await response.json()
       
-      const aiResponse = `I'd be happy to help you plan your trip to ${cityName || 'your destination'}! Based on your question about "${userMessage}", here are some personalized recommendations...`
-      
-      setConversation([...newConversation, { role: 'assistant', content: aiResponse }])
+      setConversation([...newConversation, { role: 'assistant', content: data.response }])
     } catch (error) {
       console.error('Error sending message:', error)
       setConversation([...newConversation, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }])
@@ -54,7 +67,7 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <AnimatedDialogContent open={open} className="max-w-2xl max-h-[80vh] flex flex-col h-full">
+      <AnimatedDialogContent open={open} className="max-w-4xl !max-w-4xl max-h-[80vh] flex flex-col h-full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-2xl">
             <div className="p-3 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 text-white">
@@ -68,7 +81,7 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
 
         <div className="flex flex-col h-[60vh]">
           {/* Conversation Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-gray-50/50 to-purple-50/50 dark:from-gray-800/50 dark:to-purple-900/20 rounded-xl border border-gray-200/30 dark:border-gray-700/30">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-gray-50/50 to-purple-50/50 dark:from-gray-800/50 dark:to-purple-900/20 rounded-xl border border-gray-200/30 dark:border-gray-700/30 custom-scrollbar">
             {conversation.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-6 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 mx-auto w-fit mb-4">
@@ -89,7 +102,13 @@ export function AIAssistantModal({ open, onOpenChange, cityName }: AIAssistantMo
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' 
                       : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 text-gray-800 dark:text-gray-200'
                   }`}>
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === 'user' ? (
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    ) : (
+                      <div className="prose dark:prose-invert prose-sm max-w-none">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

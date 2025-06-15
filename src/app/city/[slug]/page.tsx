@@ -107,7 +107,7 @@ export default async function CityPage({ params, searchParams }: {
 
   if (cityData.error || !cityData.cityName) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
+      <div className="container mx-auto px-4 py-16 text-center [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-purple-300/50 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-purple-400/50 dark:[&::-webkit-scrollbar-thumb]:bg-purple-600/50 dark:hover:[&::-webkit-scrollbar-thumb]:bg-purple-500/50">
         <h1 className="text-3xl font-bold mb-4">City Not Found</h1>
         <p className="mb-8">We couldn't find comprehensive information for "{slug}". This could be due to an issue fetching data or the location not being recognized. Please check the city name or try another search.</p>
         <Button asChild>

@@ -205,7 +205,7 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 custom-scrollbar">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <Header 
@@ -621,13 +621,13 @@ export function DynamicCityContent({ cityPageData }: DynamicCityContentProps) {
       {/* Floating AI Assistant Button */}
       <Button
         onClick={() => setIsAIAssistantOpen(true)}
-        className="group fixed bottom-8 right-8 z-50 h-16 w-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 p-0 text-white shadow-xl hover:from-purple-700 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 transition-all duration-300 ease-in-out transform hover:scale-110 flex items-center justify-center overflow-hidden hover:w-auto hover:px-6"
+        className="fixed bottom-8 right-8 z-50 w-36 h-16 py-4 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-xl hover:from-purple-700 hover:to-blue-700 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 transition-all duration-300 ease-in-out flex items-center justify-center gap-6"
         aria-label="Open AI Assistant"
       >
-        <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-300 ease-in-out group-hover:max-w-xs">
-          ASK AI
+        <span className="text-sm font-medium">
+          CAKS AI
         </span>
-        <Bot className="h-8 w-8 transition-all duration-300 ease-in-out mr-2" />
+        <Bot className="h-8 w-8" />
       </Button>
     </main>
   )
